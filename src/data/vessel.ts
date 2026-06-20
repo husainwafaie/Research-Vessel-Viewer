@@ -14,8 +14,8 @@ export const vessel: Vessel = {
   description:
     'A 90-meter global-class research vessel equipped for multi-disciplinary ocean science, deep-sea exploration, and long-duration expeditions in all ocean basins.',
   defaultCamera: {
-    position: [40, 20, 60],
-    target: [0, 0, 0],
+    position: [80, 30, 120],
+    target: [0, 5, 0],
     fov: 50,
   },
   systems: [
