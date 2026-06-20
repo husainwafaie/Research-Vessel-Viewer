@@ -50,7 +50,7 @@ export function Scene() {
       gl={{
         antialias: true,
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 0.5,
+        toneMappingExposure: 0.75,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
       // Clicking empty space (ocean/sky) deselects the active component

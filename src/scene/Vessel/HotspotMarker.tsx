@@ -82,8 +82,8 @@ export function HotspotMarker({ component, position, cameraOverride }: HotspotMa
         <meshBasicMaterial color={catColor} />
       </mesh>
 
-      {/* Hover / selected label */}
-      {(hovered || isSelected) && (
+      {/* Hover label — hidden when selected (info panel shows all content) */}
+      {hovered && !isSelected && (
         <Html
           center
           distanceFactor={80}

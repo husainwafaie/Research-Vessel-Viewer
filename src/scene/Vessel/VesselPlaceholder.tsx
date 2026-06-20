@@ -18,20 +18,20 @@ import { useRef } from 'react';
 import * as THREE from 'three';
 
 const HULL_MATERIAL = {
-  color: '#3a4f63',
-  roughness: 0.8,
+  color: '#4a6070',
+  roughness: 0.75,
   metalness: 0.2,
 } as const;
 
 const SUPER_MATERIAL = {
-  color: '#4f6478',
-  roughness: 0.7,
+  color: '#607888',
+  roughness: 0.65,
   metalness: 0.25,
 };
 
 const EQUIP_MATERIAL = {
-  color: '#6a7f90',
-  roughness: 0.55,
+  color: '#7a9098',
+  roughness: 0.5,
   metalness: 0.4,
 };
 
