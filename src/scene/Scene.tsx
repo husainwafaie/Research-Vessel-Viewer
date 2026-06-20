@@ -6,7 +6,10 @@ import * as THREE from 'three';
 import { Ocean, VesselSky, Lighting, Atmosphere } from './Environment';
 import { CameraController } from './Camera/CameraController';
 import { VesselPlaceholder } from './Vessel/VesselPlaceholder';
+import { ComponentHotspots } from './Vessel/ComponentHotspots';
 import { vessel } from '@data/vessel';
+import { useSceneStore } from '@store/scene.store';
+import { useUIStore } from '@store/ui.store';
 
 const defaultCam = vessel.defaultCamera;
 
@@ -24,6 +27,16 @@ const defaultCam = vessel.defaultCamera;
  * store tells it to.
  */
 export function Scene() {
+  const clearSelection = useSceneStore((s) => s.clearSelection);
+  const resetCamera    = useSceneStore((s) => s.resetCamera);
+  const closePanel     = useUIStore((s) => s.closePanel);
+
+  function handlePointerMissed() {
+    clearSelection();
+    closePanel();
+    resetCamera(vessel.defaultCamera);
+  }
+
   return (
     <Canvas
       shadows
@@ -40,37 +53,25 @@ export function Scene() {
         toneMappingExposure: 0.5,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
-      // Canvas fills its parent — App.tsx controls sizing
+      // Clicking empty space (ocean/sky) deselects the active component
+      onPointerMissed={handlePointerMissed}
       style={{ width: '100%', height: '100%' }}
     >
-      {/* ── Atmosphere must be first — sets fog and background color ── */}
+      {/* ── Atmosphere sets fog and background color first ── */}
       <Atmosphere />
 
-      {/*
-       * Environment loads async (water texture via Suspense).
-       * null fallback keeps the background color visible while loading.
-       */}
       <Suspense fallback={null}>
         <VesselSky />
         <Lighting />
         <Ocean />
         <VesselPlaceholder />
+        {/* Interactive hotspots for each vessel component */}
+        <ComponentHotspots />
       </Suspense>
 
-      {/* Camera controller is not inside Suspense — should always be active */}
+      {/* Camera controller always active, not behind Suspense */}
       <CameraController />
 
-      {/*
-       * Post-processing — minimal pass stack for Phase 1.
-       *
-       * Bloom settings:
-       *   luminanceThreshold 0.85 — only bloom the brightest highlights
-       *     (sun glint on water, vessel lights in later phases)
-       *   intensity 0.4 — subtle; this is scientific realism, not sci-fi
-       *
-       * Avoid SSAO, SSR, DOF for now — they each cost ~2-4ms per frame.
-       * Add selectively in Phase 2 when interior scenes warrant it.
-       */}
       <EffectComposer>
         <Bloom
           luminanceThreshold={0.85}
