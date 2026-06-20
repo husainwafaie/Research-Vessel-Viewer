@@ -1,23 +1,37 @@
+import { ComponentPanel } from '@ui/panels/ComponentPanel';
+import { SystemsSidebar } from '@ui/panels/SystemsSidebar';
+import { useUIStore } from '@store/ui.store';
+import { useComponentFocus } from '@hooks/useComponentFocus';
+import { allTours } from '@data/tours';
+import { useTourStore } from '@store/tour.store';
+import { useSceneStore } from '@store/scene.store';
+
 /**
  * AppShell — DOM UI layer composited over the 3D canvas.
  *
- * Structure (current — expands with each milestone):
- *   AppShell
- *   ├── Header (title + milestone badge)      ← this milestone
- *   ├── SystemsSidebar                         ← Milestone 1.8
- *   ├── ComponentPanel                         ← Milestone 1.7
- *   ├── TourPanel                              ← Milestone 1.9
- *   └── CameraHUD (reset, controls legend)    ← Milestone 1.7
- *
- * Important: this div must be pointer-events:none by default so mouse
- * events pass through to the canvas. Individual interactive UI elements
- * re-enable pointer-events with pointer-events:auto.
+ * pointer-events:none by default — interactive children re-enable with
+ * pointer-events:auto so mouse events pass through to the canvas everywhere else.
  */
 export function AppShell() {
+  const activePanel   = useUIStore((s) => s.activePanel);
+  const { selectedId } = useComponentFocus();
+  const startTour     = useTourStore((s) => s.startTour);
+  const activeTour    = useTourStore((s) => s.activeTour);
+  const resetCamera   = useSceneStore((s) => s.resetCamera);
+  const clearSelection = useSceneStore((s) => s.clearSelection);
+  const closePanel    = useUIStore((s) => s.closePanel);
+
+  function handleReset() {
+    clearSelection();
+    closePanel();
+    // defaultCamera imported inline to avoid circular dep
+    resetCamera({ position: [80, 30, 120], target: [0, 5, 0], fov: 50 });
+  }
+
   return (
     <div
       className="absolute inset-0 z-10 pointer-events-none select-none"
-      aria-label="Research Vessel Explorer UI"
+      aria-label="Research Vessel Explorer interface"
     >
       {/* ── Header ──────────────────────────────────────────── */}
       <header className="absolute top-0 left-0 right-0 flex items-start justify-between p-4">
@@ -30,20 +44,53 @@ export function AppShell() {
           </h1>
         </div>
 
-        <div className="text-data text-ocean-600 text-xs text-right">
-          <div>Deep-Sea Research Vessel Explorer</div>
-          <div className="text-ocean-700">Milestone 1.2 — Environment</div>
+        {/* ── Top-right controls ──────────────────────────── */}
+        <div className="flex items-center gap-2 pointer-events-auto">
+          {/* Reset camera */}
+          {selectedId && (
+            <button
+              onClick={handleReset}
+              className="glass rounded-lg px-3 py-1.5 text-xs text-ocean-300 hover:text-white transition-colors flex items-center gap-1.5"
+              aria-label="Reset camera to overview"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M1 6a5 5 0 1 0 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M1 2v4h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Overview
+            </button>
+          )}
+
+          {/* Tour launcher */}
+          {!activeTour && (
+            <button
+              onClick={() => startTour(allTours[0])}
+              className="glass rounded-lg px-3 py-1.5 text-xs text-ocean-300 hover:text-white transition-colors flex items-center gap-1.5"
+              aria-label="Start guided tour"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <polygon points="3,1 11,6 3,11" fill="currentColor" />
+              </svg>
+              Guided Tour
+            </button>
+          )}
         </div>
       </header>
 
-      {/* ── Controls hint (bottom center) ───────────────────── */}
+      {/* ── Left: Systems navigation sidebar ───────────────── */}
+      <SystemsSidebar />
+
+      {/* ── Right: Component detail panel ───────────────────── */}
+      {activePanel === 'component' && <ComponentPanel />}
+
+      {/* ── Bottom: Controls hint ───────────────────────────── */}
       <footer className="absolute bottom-4 left-0 right-0 flex justify-center">
-        <div className="glass rounded-full px-4 py-1.5 flex items-center gap-3 text-xs text-ocean-400 text-data">
+        <div className="glass rounded-full px-4 py-1.5 flex items-center gap-3 text-xs text-ocean-500 text-data">
           <span>Drag to orbit</span>
           <span className="text-ocean-700">·</span>
           <span>Scroll to zoom</span>
           <span className="text-ocean-700">·</span>
-          <span>Right-drag to pan</span>
+          <span>Click marker to explore</span>
         </div>
       </footer>
     </div>
