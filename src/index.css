@@ -53,6 +53,21 @@
   100% { transform: scale(2.8); opacity: 0; }
 }
 
+/* ── Accessibility: focus rings ────────────────────────────────────────────
+ * All interactive elements in the UI layer get a visible ocean-toned ring
+ * when navigated via keyboard. We use :focus-visible (not :focus) so the
+ * ring only appears for keyboard navigation, never for mouse clicks.
+ * The outline is scoped to .pointer-events-auto containers to avoid
+ * accidentally styling Three.js / canvas elements.
+ */
+.pointer-events-auto button:focus-visible,
+.pointer-events-auto a:focus-visible,
+.pointer-events-auto [role="tab"]:focus-visible {
+  outline: 2px solid #38bdf8; /* ocean-400 */
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 @layer utilities {
   .glass {
     background: rgba(2, 12, 27, 0.75);

@@ -69,6 +69,7 @@ export function SystemsSidebar() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -280, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 32 }}
+            id="systems-nav"
             className="absolute left-4 top-16 bottom-16 w-56 md:w-64 flex flex-col pointer-events-auto z-20"
             aria-label="Vessel systems navigation"
           >

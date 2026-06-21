@@ -57,6 +57,7 @@ export function Scene() {
       }}
       // Clicking empty space (ocean/sky) deselects the active component
       onPointerMissed={handlePointerMissed}
+      aria-label="3D interactive model of R/V Pelagic Horizon research vessel"
       style={{ width: '100%', height: '100%' }}
     >
       {/* ── Atmosphere sets fog and background color first ── */}

@@ -17,6 +17,22 @@ import { LoadingScreen } from '@ui/layout/LoadingScreen';
 export default function App() {
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#020c1b]">
+      {/*
+       * Skip link — visually hidden until focused via Tab key.
+       * Allows keyboard users to jump straight to the systems navigation
+       * without tabbing through the 3D canvas context first.
+       */}
+      <a
+        href="#systems-nav"
+        className="
+          sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60]
+          focus:glass focus:rounded-lg focus:px-3 focus:py-1.5 focus:text-xs
+          focus:text-ocean-300 focus:pointer-events-auto
+        "
+      >
+        Skip to systems navigation
+      </a>
+
       <Scene />
       <AppShell />
       <LoadingScreen />

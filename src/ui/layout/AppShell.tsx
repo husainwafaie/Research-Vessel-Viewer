@@ -52,7 +52,8 @@ export function AppShell() {
   return (
     <div
       className="absolute inset-0 z-10 pointer-events-none select-none"
-      aria-label="Research Vessel Explorer interface"
+      role="application"
+      aria-label="R/V Pelagic Horizon — Interactive Explorer"
     >
       {/* ── Header ──────────────────────────────────────────── */}
       <header className="absolute top-0 left-0 right-0 flex items-start justify-between p-4">
