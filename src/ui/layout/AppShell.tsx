@@ -1,5 +1,6 @@
 import { ComponentPanel } from '@ui/panels/ComponentPanel';
 import { SystemsSidebar } from '@ui/panels/SystemsSidebar';
+import { TourPanel } from '@ui/panels/TourPanel';
 import { useUIStore } from '@store/ui.store';
 import { useComponentFocus } from '@hooks/useComponentFocus';
 import { allTours } from '@data/tours';
@@ -11,20 +12,34 @@ import { useSceneStore } from '@store/scene.store';
  *
  * pointer-events:none by default — interactive children re-enable with
  * pointer-events:auto so mouse events pass through to the canvas everywhere else.
+ *
+ * Layout during normal browsing:
+ *   Header (vessel name + Overview/Tour buttons)
+ *   SystemsSidebar (left)
+ *   ComponentPanel (right, when component selected)
+ *   Footer hint
+ *
+ * Layout during tour:
+ *   Header (vessel name + Exit button suppressed — use TourPanel ✕)
+ *   SystemsSidebar (left, dims to show which system is active)
+ *   TourPanel (bottom-centre, owns narration + controls)
+ *   ComponentPanel suppressed (TourPanel takes that role)
+ *   Footer hint replaced with tour prompt
  */
 export function AppShell() {
-  const activePanel   = useUIStore((s) => s.activePanel);
+  const activePanel    = useUIStore((s) => s.activePanel);
   const { selectedId } = useComponentFocus();
-  const startTour     = useTourStore((s) => s.startTour);
-  const activeTour    = useTourStore((s) => s.activeTour);
-  const resetCamera   = useSceneStore((s) => s.resetCamera);
+  const startTour      = useTourStore((s) => s.startTour);
+  const activeTour     = useTourStore((s) => s.activeTour);
+  const resetCamera    = useSceneStore((s) => s.resetCamera);
   const clearSelection = useSceneStore((s) => s.clearSelection);
-  const closePanel    = useUIStore((s) => s.closePanel);
+  const closePanel     = useUIStore((s) => s.closePanel);
+
+  const isTourActive = activeTour !== null;
 
   function handleReset() {
     clearSelection();
     closePanel();
-    // defaultCamera imported inline to avoid circular dep
     resetCamera({ position: [80, 30, 120], target: [0, 5, 0], fov: 50 });
   }
 
@@ -46,8 +61,8 @@ export function AppShell() {
 
         {/* ── Top-right controls ──────────────────────────── */}
         <div className="flex items-center gap-2 pointer-events-auto">
-          {/* Reset camera */}
-          {selectedId && (
+          {/* Reset camera — hidden during tour (use Exit tour instead) */}
+          {selectedId && !isTourActive && (
             <button
               onClick={handleReset}
               className="glass rounded-lg px-3 py-1.5 text-xs text-ocean-300 hover:text-white transition-colors flex items-center gap-1.5"
@@ -61,8 +76,8 @@ export function AppShell() {
             </button>
           )}
 
-          {/* Tour launcher */}
-          {!activeTour && (
+          {/* Tour launcher — hidden while tour is running */}
+          {!isTourActive && (
             <button
               onClick={() => startTour(allTours[0])}
               className="glass rounded-lg px-3 py-1.5 text-xs text-ocean-300 hover:text-white transition-colors flex items-center gap-1.5"
@@ -78,19 +93,45 @@ export function AppShell() {
       </header>
 
       {/* ── Left: Systems navigation sidebar ───────────────── */}
-      <SystemsSidebar />
+      {/*
+        * Remains visible during tour — active system is highlighted,
+        * giving users context about which part of the vessel is featured.
+        * pointer-events are disabled during tour so clicks don't interrupt.
+        */}
+      <div className={isTourActive ? 'pointer-events-none opacity-50' : ''}>
+        <SystemsSidebar />
+      </div>
 
-      {/* ── Right: Component detail panel ───────────────────── */}
-      {activePanel === 'component' && <ComponentPanel />}
+      {/* ── Right: Component detail panel ─────────────────────
+        * Suppressed during tour — TourPanel owns the narration role.
+        */}
+      {activePanel === 'component' && !isTourActive && (
+        <ComponentPanel />
+      )}
+
+      {/* ── Bottom-centre: Tour panel (AnimatePresence handles mount/exit) */}
+      <TourPanel />
 
       {/* ── Bottom: Controls hint ───────────────────────────── */}
       <footer className="absolute bottom-4 left-0 right-0 flex justify-center">
         <div className="glass rounded-full px-4 py-1.5 flex items-center gap-3 text-xs text-ocean-500 text-data">
-          <span>Drag to orbit</span>
-          <span className="text-ocean-700">·</span>
-          <span>Scroll to zoom</span>
-          <span className="text-ocean-700">·</span>
-          <span>Click marker to explore</span>
+          {isTourActive ? (
+            <>
+              <span>Tour in progress</span>
+              <span className="text-ocean-700">·</span>
+              <span>Drag to orbit</span>
+              <span className="text-ocean-700">·</span>
+              <span>Scroll to zoom</span>
+            </>
+          ) : (
+            <>
+              <span>Drag to orbit</span>
+              <span className="text-ocean-700">·</span>
+              <span>Scroll to zoom</span>
+              <span className="text-ocean-700">·</span>
+              <span>Click marker to explore</span>
+            </>
+          )}
         </div>
       </footer>
     </div>
