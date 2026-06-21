@@ -71,15 +71,22 @@ export function VesselModel() {
     <primitive
       object={vesselScene}
       /*
-       * Initial position / rotation / scale.
-       * The RCRV GLTF is exported Y-up with no root transform, so no
-       * axis-swap rotation is needed.  The Y offset below pushes the
-       * vessel's keel below the waterline (y = 0) so the hull appears
-       * to float naturally; tune this in Milestone 2.3 once the
-       * bounding-box numbers are known.
+       * Calibrated from bounding-box console output (Milestone 2.1):
+       *   size   63.84 × 27.54 × 16.46  (X = bow↔stern, Y = height, Z = beam)
+       *   center (1.31, 12.33, 5.69) in model space
+       *   min Y  −1.44  (keel) | max Y 26.09 (top of mast)
+       *
+       * rotation Y = π/2 aligns the vessel's long axis (X) with the scene's
+       * bow→+Z convention used by all camera and hotspot data.
+       *
+       * After that rotation the model centre maps to world (5.69, 12.33, −1.31),
+       * so we translate by (−5.69, _, 1.31) to place the centreline at X=0, Z=0.
+       *
+       * Y = −1.5 puts the keel at scene Y ≈ −2.94 — a realistic ~3 m draft
+       * for a vessel this size.  Fine-tune alongside hotspot calibration in 2.3.
        */
-      position={[0, -1.5, 0]}
-      rotation={[0, 0, 0]}
+      position={[-5.69, -1.5, 1.31]}
+      rotation={[0, Math.PI / 2, 0]}
       scale={1}
     />
   );
