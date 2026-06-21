@@ -7,6 +7,7 @@ import { Ocean, VesselSky, Lighting, Atmosphere } from './Environment';
 import { CameraController } from './Camera/CameraController';
 import { VesselPlaceholder } from './Vessel/VesselPlaceholder';
 import { ComponentHotspots } from './Vessel/ComponentHotspots';
+import { TourDriver } from './Tour/TourDriver';
 import { vessel } from '@data/vessel';
 import { useSceneStore } from '@store/scene.store';
 import { useUIStore } from '@store/ui.store';
@@ -71,6 +72,9 @@ export function Scene() {
 
       {/* Camera controller always active, not behind Suspense */}
       <CameraController />
+
+      {/* Tour driver — listens to tour store, focuses camera, auto-advances */}
+      <TourDriver />
 
       <EffectComposer>
         <Bloom

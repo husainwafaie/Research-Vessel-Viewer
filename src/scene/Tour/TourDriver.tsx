@@ -15,6 +15,15 @@ import { useComponentFocus } from '@hooks/useComponentFocus';
  *   - When the tour is exited, blur back to the overview.
  *
  * This component has NO UI — the TourPanel (DOM layer) owns all visuals.
+ *
+ * Timer design note
+ * ─────────────────
+ * elapsedMsRef and lastSeenStepRef are both tracked inside useFrame so the
+ * reset is always synchronous on the very first tick after a step change
+ * (whether triggered by auto-advance or by the user clicking Prev/Next in
+ * TourPanel). A useEffect-based reset fires after paint and can miss one or
+ * more useFrame ticks, causing the timer to fire instantly on the new step
+ * if the accumulated elapsed already exceeds that step's dwellMs.
  */
 export function TourDriver() {
   const activeTour       = useTourStore((s) => s.activeTour);
@@ -24,8 +33,10 @@ export function TourDriver() {
 
   const { focus, blur } = useComponentFocus();
 
-  // Tracks ms elapsed in the current step. Reset on every step change.
-  const elapsedMsRef = useRef(0);
+  // Both refs are read and written exclusively inside useFrame, keeping the
+  // reset tightly coupled to the animation loop.
+  const elapsedMsRef    = useRef(0);
+  const lastSeenStepRef = useRef(-1);
 
   // ── Focus camera when step changes ──────────────────────────────────────────
   useEffect(() => {
@@ -35,14 +46,11 @@ export function TourDriver() {
     focus(step.componentId);
   }, [activeTour, currentStepIndex, focus]);
 
-  // ── Reset elapsed timer when step changes ───────────────────────────────────
-  useEffect(() => {
-    elapsedMsRef.current = 0;
-  }, [currentStepIndex, activeTour]);
-
   // ── Return camera to overview when tour ends ─────────────────────────────────
   useEffect(() => {
     if (!activeTour) {
+      lastSeenStepRef.current = -1;
+      elapsedMsRef.current    = 0;
       blur();
     }
   }, [activeTour, blur]);
@@ -53,13 +61,21 @@ export function TourDriver() {
     const step = activeTour.steps[currentStepIndex];
     if (!step) return;
 
+    // Synchronous reset: detect any step change (manual or auto) on the first
+    // tick after the React render commits the new currentStepIndex value.
+    if (lastSeenStepRef.current !== currentStepIndex) {
+      elapsedMsRef.current    = 0;
+      lastSeenStepRef.current = currentStepIndex;
+      return; // skip this tick's accumulation; begin fresh next frame
+    }
+
     elapsedMsRef.current += delta * 1000;
 
     if (elapsedMsRef.current >= step.dwellMs) {
-      // Reset BEFORE calling nextStep so the next useFrame doesn't
-      // see a stale elapsed value against the new step's dwellMs.
       elapsedMsRef.current = 0;
       nextStep();
+      // lastSeenStepRef will be updated on the next tick when currentStepIndex
+      // has propagated from the store through the selector.
     }
   });
 
