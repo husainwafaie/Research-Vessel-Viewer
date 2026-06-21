@@ -28,13 +28,15 @@ import { useSceneStore } from '@store/scene.store';
  *   Footer hint replaced with tour prompt
  */
 export function AppShell() {
-  const activePanel    = useUIStore((s) => s.activePanel);
-  const { selectedId } = useComponentFocus();
-  const startTour      = useTourStore((s) => s.startTour);
-  const activeTour     = useTourStore((s) => s.activeTour);
-  const resetCamera    = useSceneStore((s) => s.resetCamera);
-  const clearSelection = useSceneStore((s) => s.clearSelection);
-  const closePanel     = useUIStore((s) => s.closePanel);
+  const activePanel        = useUIStore((s) => s.activePanel);
+  const sidebarExpanded    = useUIStore((s) => s.sidebarExpanded);
+  const toggleSidebar      = useUIStore((s) => s.toggleSidebar);
+  const { selectedId }     = useComponentFocus();
+  const startTour          = useTourStore((s) => s.startTour);
+  const activeTour         = useTourStore((s) => s.activeTour);
+  const resetCamera        = useSceneStore((s) => s.resetCamera);
+  const clearSelection     = useSceneStore((s) => s.clearSelection);
+  const closePanel         = useUIStore((s) => s.closePanel);
 
   const isTourActive = activeTour !== null;
 
@@ -54,13 +56,30 @@ export function AppShell() {
     >
       {/* ── Header ──────────────────────────────────────────── */}
       <header className="absolute top-0 left-0 right-0 flex items-start justify-between p-4">
-        <div className="pointer-events-auto">
-          <div className="text-data text-ocean-500 text-xs uppercase tracking-widest mb-0.5">
-            Oceanographic Research Vessel
+        <div className="flex items-start gap-3 pointer-events-auto">
+          {/* Mobile systems toggle — hidden on md+ where sidebar is always visible */}
+          {!isTourActive && (
+            <button
+              onClick={toggleSidebar}
+              className="md:hidden glass rounded-lg p-2 mt-0.5 text-ocean-400 hover:text-white transition-colors shrink-0"
+              aria-label={sidebarExpanded ? 'Close systems panel' : 'Open systems panel'}
+              aria-expanded={sidebarExpanded}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                <rect y="1" width="14" height="1.5" rx="0.75" fill="currentColor" />
+                <rect y="6.25" width="14" height="1.5" rx="0.75" fill="currentColor" />
+                <rect y="11.5" width="14" height="1.5" rx="0.75" fill="currentColor" />
+              </svg>
+            </button>
+          )}
+          <div>
+            <div className="text-data text-ocean-500 text-xs uppercase tracking-widest mb-0.5">
+              Oceanographic Research Vessel
+            </div>
+            <h1 className="text-white text-lg font-light tracking-wide leading-none">
+              R/V Pelagic Horizon
+            </h1>
           </div>
-          <h1 className="text-white text-lg font-light tracking-wide leading-none">
-            R/V Pelagic Horizon
-          </h1>
         </div>
 
         {/* ── Top-right controls ──────────────────────────── */}
