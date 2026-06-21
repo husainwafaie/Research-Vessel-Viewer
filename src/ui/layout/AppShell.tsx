@@ -136,8 +136,8 @@ export function AppShell() {
       {/* ── Bottom-centre: Tour panel (AnimatePresence handles mount/exit) */}
       <TourPanel />
 
-      {/* ── Bottom: Controls hint ───────────────────────────── */}
-      <footer className="absolute bottom-4 left-0 right-0 flex justify-center">
+      {/* ── Bottom: Controls hint + attribution ─────────────── */}
+      <footer className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-2">
         <div className="glass rounded-full px-4 py-1.5 flex items-center gap-3 text-xs text-ocean-500 text-data">
           {isTourActive ? (
             <>
@@ -159,6 +159,37 @@ export function AppShell() {
             </>
           )}
         </div>
+
+        {/* CC attribution — required by the vessel model licence (CC BY 4.0) */}
+        <p className="text-data text-ocean-800 text-xs pointer-events-auto">
+          3D model:{' '}
+          <a
+            href="https://skfb.ly/6tpP9"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-ocean-500 transition-colors underline underline-offset-2"
+          >
+            RCRV
+          </a>{' '}
+          by{' '}
+          <a
+            href="https://sketchfab.com/alan.dennis"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-ocean-500 transition-colors underline underline-offset-2"
+          >
+            Alan Dennis
+          </a>{' '}
+          ·{' '}
+          <a
+            href="http://creativecommons.org/licenses/by/4.0/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-ocean-500 transition-colors underline underline-offset-2"
+          >
+            CC BY 4.0
+          </a>
+        </p>
       </footer>
     </div>
   );
