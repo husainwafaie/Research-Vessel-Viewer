@@ -3,6 +3,7 @@ import { SystemsSidebar } from '@ui/panels/SystemsSidebar';
 import { TourPanel } from '@ui/panels/TourPanel';
 import { useUIStore } from '@store/ui.store';
 import { useComponentFocus } from '@hooks/useComponentFocus';
+import { useKeyboardShortcuts } from '@hooks/useKeyboardShortcuts';
 import { allTours } from '@data/tours';
 import { useTourStore } from '@store/tour.store';
 import { useSceneStore } from '@store/scene.store';
@@ -36,6 +37,9 @@ export function AppShell() {
   const closePanel     = useUIStore((s) => s.closePanel);
 
   const isTourActive = activeTour !== null;
+
+  // Global keyboard shortcuts: Escape, Arrow keys, Space
+  useKeyboardShortcuts();
 
   function handleReset() {
     clearSelection();
@@ -117,11 +121,11 @@ export function AppShell() {
         <div className="glass rounded-full px-4 py-1.5 flex items-center gap-3 text-xs text-ocean-500 text-data">
           {isTourActive ? (
             <>
-              <span>Tour in progress</span>
+              <span>← → navigate</span>
               <span className="text-ocean-700">·</span>
-              <span>Drag to orbit</span>
+              <span>Space pause</span>
               <span className="text-ocean-700">·</span>
-              <span>Scroll to zoom</span>
+              <span>Esc exit</span>
             </>
           ) : (
             <>
@@ -130,6 +134,8 @@ export function AppShell() {
               <span>Scroll to zoom</span>
               <span className="text-ocean-700">·</span>
               <span>Click marker to explore</span>
+              <span className="text-ocean-700">·</span>
+              <span>Esc to reset</span>
             </>
           )}
         </div>
