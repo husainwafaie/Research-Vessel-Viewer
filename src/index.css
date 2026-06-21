@@ -41,6 +41,12 @@
   }
 }
 
+/* Tour progress bar — width animated from 0 → 100% over the step dwellMs */
+@keyframes tour-progress {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
 @layer utilities {
   .glass {
     background: rgba(2, 12, 27, 0.75);
