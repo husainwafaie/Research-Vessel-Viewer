@@ -8,6 +8,7 @@ import { CameraController } from './Camera/CameraController';
 import { VesselPlaceholder } from './Vessel/VesselPlaceholder';
 import { ComponentHotspots } from './Vessel/ComponentHotspots';
 import { TourDriver } from './Tour/TourDriver';
+import { SceneReadyNotifier } from './SceneReadyNotifier';
 import { vessel } from '@data/vessel';
 import { useSceneStore } from '@store/scene.store';
 import { useUIStore } from '@store/ui.store';
@@ -75,6 +76,9 @@ export function Scene() {
 
       {/* Tour driver — listens to tour store, focuses camera, auto-advances */}
       <TourDriver />
+
+      {/* Bridges Three.js load progress into the UI store for LoadingScreen */}
+      <SceneReadyNotifier />
 
       <EffectComposer>
         <Bloom

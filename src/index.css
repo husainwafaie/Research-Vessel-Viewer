@@ -47,6 +47,12 @@
   to   { width: 100%; }
 }
 
+/* Loading screen — concentric sonar rings pulse outward */
+@keyframes sonar-ring {
+  0%   { transform: scale(0.4); opacity: 0.7; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
 @layer utilities {
   .glass {
     background: rgba(2, 12, 27, 0.75);
