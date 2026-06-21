@@ -8,6 +8,7 @@ import { CameraController } from './Camera/CameraController';
 import { VesselPlaceholder } from './Vessel/VesselPlaceholder';
 import { ComponentHotspots } from './Vessel/ComponentHotspots';
 import { TourDriver } from './Tour/TourDriver';
+import { SceneReadyNotifier } from './SceneReadyNotifier';
 import { vessel } from '@data/vessel';
 import { useSceneStore } from '@store/scene.store';
 import { useUIStore } from '@store/ui.store';
@@ -56,6 +57,7 @@ export function Scene() {
       }}
       // Clicking empty space (ocean/sky) deselects the active component
       onPointerMissed={handlePointerMissed}
+      aria-label="3D interactive model of R/V Pelagic Horizon research vessel"
       style={{ width: '100%', height: '100%' }}
     >
       {/* ── Atmosphere sets fog and background color first ── */}
@@ -75,6 +77,9 @@ export function Scene() {
 
       {/* Tour driver — listens to tour store, focuses camera, auto-advances */}
       <TourDriver />
+
+      {/* Bridges Three.js load progress into the UI store for LoadingScreen */}
+      <SceneReadyNotifier />
 
       <EffectComposer>
         <Bloom
