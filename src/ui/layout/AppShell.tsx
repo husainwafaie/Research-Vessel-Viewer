@@ -178,7 +178,7 @@ export function AppShell() {
             rel="noopener noreferrer"
             className="hover:text-ocean-500 transition-colors underline underline-offset-2"
           >
-            Oregon State University
+            Alan Dennis
           </a>{' '}
           ·{' '}
           <a

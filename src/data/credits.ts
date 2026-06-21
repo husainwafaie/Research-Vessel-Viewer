@@ -16,7 +16,7 @@ export interface AssetCredit {
 
 export const VESSEL_MODEL_CREDIT: AssetCredit = {
   title:       'RCRV - Regional Class Research Vessel',
-  author:      'Oregon State University Extension Service',
+  author:      'Alan Dennis',
   authorUrl:   'https://sketchfab.com/alan.dennis',
   sourceUrl:   'https://skfb.ly/6tpP9',
   licenceName: 'CC BY 4.0',

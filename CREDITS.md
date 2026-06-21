@@ -2,10 +2,9 @@
 
 ## 3D Model
 
-This work is based on **"RCRV - Regional Class Research Vessel"**
-(https://sketchfab.com/3d-models/rcrv-regional-class-research-vessel-11b4b97a9e60497ea91c0727e404ecf6)
-by **Oregon State University Extension Service** (https://sketchfab.com/alan.dennis),
-licensed under **CC BY 4.0** (http://creativecommons.org/licenses/by/4.0/).
+"RCRV - Regional Class Research Vessel" (https://skfb.ly/6tpP9)
+by **Alan Dennis** (https://sketchfab.com/alan.dennis)
+is licensed under **CC BY 4.0** (http://creativecommons.org/licenses/by/4.0/).
 
 ## Open Source Libraries
 
