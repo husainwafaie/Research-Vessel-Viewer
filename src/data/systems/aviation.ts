@@ -28,9 +28,13 @@ export const aviationSystem: VesselSystem = {
         fov: 55,
       },
       meshBindings: [
-        { meshName: 'helipad_deck', role: 'primary' },
-        { meshName: 'helipad_markings', role: 'highlight' },
-        { meshName: 'helipad_netting', role: 'highlight' },
+        // The RCRV GLTF has no dedicated helideck mesh. The forward deck 3
+        // area (Deck 3 front) and mid-ship deck 2 surfaces are the closest
+        // visual approximation of the forward helideck landing zone.
+        { meshName: 'Deck 3 front_0', role: 'primary' },
+        { meshName: 'Deck 2 mid_0',   role: 'highlight' },
+        { meshName: 'Deck 2 mid_1',   role: 'highlight' },
+        { meshName: 'Deck 2 mid_2',   role: 'highlight' },
       ],
       animations: [],
       relatedComponentIds: ['bridge', 'crane_main'],

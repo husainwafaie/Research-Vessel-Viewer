@@ -28,8 +28,16 @@ export const navigationSystem: VesselSystem = {
         fov: 50,
       },
       meshBindings: [
-        { meshName: 'bridge_exterior', role: 'primary' },
-        { meshName: 'bridge_windows', role: 'highlight' },
+        // Deck 4 = bridge deck — the main enclosed bridge structure
+        { meshName: '* Deck 4_0', role: 'primary' },
+        { meshName: '* Deck 4_1', role: 'primary' },
+        { meshName: '* Deck 4_2', role: 'primary' },
+        { meshName: '* Deck 4_3', role: 'primary' },
+        { meshName: '* Deck 4_4', role: 'primary' },
+        // Deck 5 = wheelhouse / bridge top level
+        { meshName: 'Deck 5 walls_0', role: 'highlight' },
+        { meshName: 'Deck 5 walls_1', role: 'highlight' },
+        { meshName: 'Deck 5 floor_0', role: 'highlight' },
       ],
       animations: [],
       relatedComponentIds: ['radar_mast', 'propulsion_main'],
@@ -64,9 +72,26 @@ export const navigationSystem: VesselSystem = {
         fov: 45,
       },
       meshBindings: [
-        { meshName: 'mast_radar_main', role: 'primary' },
-        { meshName: 'mast_antenna_array', role: 'highlight' },
-        { meshName: 'mast_light_navigation', role: 'highlight' },
+        // Main mast column and its cross-supports on Deck 3
+        { meshName: 'Deck 3 mast_0',          role: 'primary' },
+        { meshName: 'Deck 3 mast_1',          role: 'primary' },
+        { meshName: 'Deck 3 mast_2',          role: 'primary' },
+        { meshName: 'Deck 3 mast supports_0', role: 'primary' },
+        // Crow's-nest / instrument platform at mast head
+        { meshName: 'Nest base_0',            role: 'primary' },
+        { meshName: 'Nest mid_0',             role: 'primary' },
+        { meshName: 'Nest Top_0',             role: 'primary' },
+        { meshName: 'Nest ladder_0',          role: 'highlight' },
+        { meshName: 'Nest railing mid_0',     role: 'highlight' },
+        { meshName: 'Nest railing top_0',     role: 'highlight' },
+        // Radar heads and antenna domes
+        { meshName: 'Nest radar 2_0',              role: 'highlight' },
+        { meshName: 'Nest radar 3_0',              role: 'highlight' },
+        { meshName: 'Next Radar 1_0',              role: 'highlight' },
+        { meshName: 'Radar dome left_0',           role: 'highlight' },
+        { meshName: 'Radar dome right_0',          role: 'highlight' },
+        { meshName: 'Radar dome right Pole_0',     role: 'highlight' },
+        { meshName: 'Radar dome right Pole.001_0', role: 'highlight' },
       ],
       animations: [
         { id: 'radar_spin', label: 'Radar Rotation', clipName: 'radar_spin_loop' },

@@ -28,9 +28,12 @@ export const launchSystem: VesselSystem = {
         fov: 50,
       },
       meshBindings: [
-        { meshName: 'aframe_structure', role: 'primary' },
-        { meshName: 'aframe_winch', role: 'highlight' },
-        { meshName: 'aframe_cable', role: 'highlight' },
+        // Crane B = the main stern crane / A-frame LARS on the aft deck
+        { meshName: 'Crane B main_0',          role: 'primary' },
+        { meshName: 'Crane B Arm_0',           role: 'primary' },
+        { meshName: 'Crane B Base_0',          role: 'primary' },
+        { meshName: 'Crane B Base supports_0', role: 'highlight' },
+        { meshName: 'Crane B pulley_0',        role: 'highlight' },
       ],
       animations: [
         { id: 'aframe_deploy', label: 'Deploy A-Frame', clipName: 'aframe_swing_out' },
@@ -67,9 +70,15 @@ export const launchSystem: VesselSystem = {
         fov: 55,
       },
       meshBindings: [
-        { meshName: 'crane_main_boom', role: 'primary' },
-        { meshName: 'crane_main_base', role: 'primary' },
-        { meshName: 'crane_main_cable', role: 'highlight' },
+        // Deck 3 crane = knuckle-boom crane mounted on the main deck superstructure
+        { meshName: 'Deck 3 crane base_0', role: 'primary' },
+        { meshName: 'Deck 3 crane arm_0',  role: 'primary' },
+        // Effer cranes = additional articulated deck cranes (port/starboard/centre)
+        { meshName: 'Effer Crane Right_0',  role: 'primary' },
+        { meshName: 'Effer Crane Left_0',   role: 'primary' },
+        { meshName: 'Effer Crane Middle_0', role: 'primary' },
+        { meshName: 'Effer Crane Pulley_0', role: 'highlight' },
+        { meshName: 'Crane_Effer.009_0',    role: 'highlight' },
       ],
       animations: [
         { id: 'crane_extend', label: 'Extend Boom', clipName: 'crane_boom_extend' },
@@ -99,9 +108,11 @@ export const launchSystem: VesselSystem = {
         fov: 55,
       },
       meshBindings: [
-        { meshName: 'rov_bay_doors', role: 'primary' },
-        { meshName: 'rov_bay_track', role: 'highlight' },
-        { meshName: 'rov_vehicle', role: 'highlight' },
+        // Cranehouse = the enclosed equipment building on the aft deck that
+        // serves as the ROV hangar and control-room structure.
+        { meshName: '* Cranehouse_0',        role: 'primary' },
+        { meshName: '* Cranehouse_1',        role: 'primary' },
+        { meshName: '* Cranehouse ladder_0', role: 'highlight' },
       ],
       animations: [
         { id: 'rov_deploy', label: 'Deploy ROV', clipName: 'rov_launch_sequence' },
