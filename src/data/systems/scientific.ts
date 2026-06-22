@@ -28,8 +28,11 @@ export const scientificSystem: VesselSystem = {
         fov: 45,
       },
       meshBindings: [
-        { meshName: 'sonar_multibeam_array', role: 'primary' },
-        { meshName: 'sonar_multibeam_dome', role: 'highlight' },
+        // Hull-mounted sonar: no discrete transducer mesh in the GLTF, so we
+        // bind the mid-ship keel shell where the sonar array is flush-mounted.
+        { meshName: 'Deck1 Mid Shell_0', role: 'primary' },
+        { meshName: 'Deck1 Mid Shell_1', role: 'primary' },
+        { meshName: 'Deck1 Mid Shell_2', role: 'primary' },
       ],
       animations: [
         { id: 'sonar_sweep', label: 'Sonar Sweep', clipName: 'sonar_sweep_anim' },
@@ -65,7 +68,10 @@ export const scientificSystem: VesselSystem = {
         fov: 50,
       },
       meshBindings: [
-        { meshName: 'adcp_transducer', role: 'primary' },
+        // No discrete ADCP transducer mesh in the GLTF; the model's pump
+        // assembly occupies the hull well where the ADCP would be installed.
+        { meshName: 'Pump_0',          role: 'primary' },
+        { meshName: 'Pump supports_0', role: 'highlight' },
       ],
       animations: [],
       relatedComponentIds: ['multibeam_sonar', 'sub_bottom_profiler'],

@@ -29,8 +29,12 @@ export const propulsionSystem: VesselSystem = {
         fov: 50,
       },
       meshBindings: [
-        { meshName: 'propulsion_main_shaft', role: 'primary' },
-        { meshName: 'propulsion_rudder', role: 'highlight' },
+        // Azimuthing pod drives are below the waterline and not modelled
+        // as discrete meshes; bind the stern hull and exhaust as visible proxies.
+        { meshName: 'Deck 0 Rear_0',       role: 'primary' },
+        { meshName: 'Deck 1 rear shell_0', role: 'primary' },
+        { meshName: 'Deck 1 rear shell_1', role: 'primary' },
+        { meshName: 'Exhaust_0',           role: 'highlight' },
       ],
       animations: [
         { id: 'prop_spin', label: 'Propeller Rotation', clipName: 'propeller_spin_loop' },
@@ -58,8 +62,13 @@ export const propulsionSystem: VesselSystem = {
         fov: 55,
       },
       meshBindings: [
-        { meshName: 'propulsion_thruster_bow', role: 'primary' },
-        { meshName: 'propulsion_thruster_stern', role: 'highlight' },
+        // Bow thrusters are retractable tunnel thrusters flush with the hull;
+        // bind the bow shell plates as the closest visible representation.
+        { meshName: 'Deck 0 Front_0',        role: 'primary' },
+        { meshName: 'Deck 1 front shell_0',  role: 'primary' },
+        { meshName: 'Deck 1 front shell_1',  role: 'primary' },
+        { meshName: 'Deck 1 front shell_2',  role: 'primary' },
+        { meshName: 'Deck 1 front shell_3',  role: 'primary' },
       ],
       animations: [],
       relatedComponentIds: ['propulsion_main', 'bridge'],
