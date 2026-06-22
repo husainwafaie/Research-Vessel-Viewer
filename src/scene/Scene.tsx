@@ -5,7 +5,7 @@ import * as THREE from 'three';
 
 import { Ocean, VesselSky, Lighting, Atmosphere } from './Environment';
 import { CameraController } from './Camera/CameraController';
-import { VesselPlaceholder } from './Vessel/VesselPlaceholder';
+import { VesselModel } from './Vessel/VesselModel';
 import { ComponentHotspots } from './Vessel/ComponentHotspots';
 import { TourDriver } from './Tour/TourDriver';
 import { SceneReadyNotifier } from './SceneReadyNotifier';
@@ -67,7 +67,7 @@ export function Scene() {
         <VesselSky />
         <Lighting />
         <Ocean />
-        <VesselPlaceholder />
+        <VesselModel />
         {/* Interactive hotspots for each vessel component */}
         <ComponentHotspots />
       </Suspense>
