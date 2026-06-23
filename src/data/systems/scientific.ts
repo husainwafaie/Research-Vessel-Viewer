@@ -23,16 +23,17 @@ export const scientificSystem: VesselSystem = {
         { label: 'Ping Rate', value: 'Up to 50', unit: 'Hz' },
       ],
       camera: {
-        position: [12, -4, 0],
-        target: [6, -6, 0],
-        fov: 45,
+        // Hull shell mesh centre ≈ [0, 7.17, -7.55]; low starboard keel view
+        position: [25, 6, 10],
+        target:   [0, 1, -8],
+        fov: 48,
       },
       meshBindings: [
         // Hull-mounted sonar: no discrete transducer mesh in the GLTF, so we
         // bind the mid-ship keel shell where the sonar array is flush-mounted.
-        { meshName: 'Deck1 Mid Shell_0', role: 'primary' },
-        { meshName: 'Deck1 Mid Shell_1', role: 'primary' },
-        { meshName: 'Deck1 Mid Shell_2', role: 'primary' },
+        { meshName: 'Deck1_Mid_Shell_0', role: 'primary' },
+        { meshName: 'Deck1_Mid_Shell_1', role: 'primary' },
+        { meshName: 'Deck1_Mid_Shell_2', role: 'primary' },
       ],
       animations: [
         { id: 'sonar_sweep', label: 'Sonar Sweep', clipName: 'sonar_sweep_anim' },
@@ -63,15 +64,16 @@ export const scientificSystem: VesselSystem = {
         { label: 'Velocity Accuracy', value: '±1', unit: 'cm/s' },
       ],
       camera: {
-        position: [-10, -4, 5],
-        target: [-6, -6, 0],
+        // Pump mesh centre ≈ [1.53, 8.86, 9.38]; port-elevated close view
+        position: [-22, 16, 18],
+        target:   [1.5, 8, 9],
         fov: 50,
       },
       meshBindings: [
         // No discrete ADCP transducer mesh in the GLTF; the model's pump
         // assembly occupies the hull well where the ADCP would be installed.
         { meshName: 'Pump_0',          role: 'primary' },
-        { meshName: 'Pump supports_0', role: 'highlight' },
+        { meshName: 'Pump_supports_0', role: 'highlight' },
       ],
       animations: [],
       relatedComponentIds: ['multibeam_sonar', 'sub_bottom_profiler'],

@@ -24,16 +24,17 @@ export const propulsionSystem: VesselSystem = {
         { label: 'Noise Class', value: 'DNV Silent-R' },
       ],
       camera: {
-        position: [-25, -3, 0],
-        target: [-18, -5, 0],
-        fov: 50,
+        // Stern hull mesh centre ≈ [0, 1.18, 16.54]; stern-quarter elevated view
+        position: [22, 14, 32],
+        target:   [0, 3, 17],
+        fov: 52,
       },
       meshBindings: [
         // Azimuthing pod drives are below the waterline and not modelled
         // as discrete meshes; bind the stern hull and exhaust as visible proxies.
-        { meshName: 'Deck 0 Rear_0',       role: 'primary' },
-        { meshName: 'Deck 1 rear shell_0', role: 'primary' },
-        { meshName: 'Deck 1 rear shell_1', role: 'primary' },
+        { meshName: 'Deck_0_Rear_0',       role: 'primary' },
+        { meshName: 'Deck_1_rear_shell_0', role: 'primary' },
+        { meshName: 'Deck_1_rear_shell_1', role: 'primary' },
         { meshName: 'Exhaust_0',           role: 'highlight' },
       ],
       animations: [
@@ -57,18 +58,19 @@ export const propulsionSystem: VesselSystem = {
         { label: 'Retraction Time', value: '90', unit: 'seconds' },
       ],
       camera: {
-        position: [22, -2, 5],
-        target: [16, -4, 0],
-        fov: 55,
+        // Bow shell mesh centre ≈ [0, 1.18, -14.01]; low bow-quarter view
+        position: [22, 14, -30],
+        target:   [0, 3, -14],
+        fov: 52,
       },
       meshBindings: [
         // Bow thrusters are retractable tunnel thrusters flush with the hull;
         // bind the bow shell plates as the closest visible representation.
-        { meshName: 'Deck 0 Front_0',        role: 'primary' },
-        { meshName: 'Deck 1 front shell_0',  role: 'primary' },
-        { meshName: 'Deck 1 front shell_1',  role: 'primary' },
-        { meshName: 'Deck 1 front shell_2',  role: 'primary' },
-        { meshName: 'Deck 1 front shell_3',  role: 'primary' },
+        { meshName: 'Deck_0_Front_0',        role: 'primary' },
+        { meshName: 'Deck_1_front_shell_0',  role: 'primary' },
+        { meshName: 'Deck_1_front_shell_1',  role: 'primary' },
+        { meshName: 'Deck_1_front_shell_2',  role: 'primary' },
+        { meshName: 'Deck_1_front_shell_3',  role: 'primary' },
       ],
       animations: [],
       relatedComponentIds: ['propulsion_main', 'bridge'],

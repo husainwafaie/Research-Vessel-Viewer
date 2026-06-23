@@ -3,7 +3,6 @@ import { useSceneStore } from '@store/scene.store';
 import { useUIStore } from '@store/ui.store';
 import { getComponentById, getComponentSystem } from '@domain/selectors';
 import { vessel } from '@data/vessel';
-import { PLACEHOLDER_POSITIONS } from '@data/placeholderPositions';
 import type { VesselComponent, VesselSystem, CameraTarget } from '@domain/types';
 
 /**
@@ -38,11 +37,8 @@ export function useComponentFocus() {
     (id: string, cameraOverride?: CameraTarget) => {
       const c = getComponentById(vessel, id);
       if (!c) return;
-      // Prefer explicit override → placeholder calibration → domain camera
-      const camera =
-        cameraOverride ??
-        PLACEHOLDER_POSITIONS[id]?.camera ??
-        c.camera;
+      // Prefer explicit override (e.g. from a tour stop) → domain camera
+      const camera = cameraOverride ?? c.camera;
       selectComponent(id, camera);
       openPanel('component');
     },

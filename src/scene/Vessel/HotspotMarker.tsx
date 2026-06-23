@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import type { VesselComponent, Vector3Tuple, CameraTarget } from '@domain/types';
+import type { VesselComponent, Vector3Tuple } from '@domain/types';
 import { useComponentFocus } from '@hooks/useComponentFocus';
 import { CATEGORY_CONFIG } from '@data/categoryConfig';
 import { getComponentSystem } from '@domain/selectors';
@@ -11,14 +11,13 @@ import { vessel } from '@data/vessel';
 interface HotspotMarkerProps {
   component: VesselComponent;
   position: Vector3Tuple;
-  cameraOverride?: CameraTarget | undefined;
 }
 
 const IDLE_COLOR  = new THREE.Color('#0ea5e9');
 const HOVER_COLOR = new THREE.Color('#7dd3fc');
 const ACTIVE_COLOR = new THREE.Color('#ffffff');
 
-export function HotspotMarker({ component, position, cameraOverride }: HotspotMarkerProps) {
+export function HotspotMarker({ component, position }: HotspotMarkerProps) {
   const [hovered, setHovered] = useState(false);
   const { focus, selectedId }  = useComponentFocus();
   const isSelected = selectedId === component.id;
@@ -53,7 +52,7 @@ export function HotspotMarker({ component, position, cameraOverride }: HotspotMa
       position={position}
       onClick={(e) => {
         e.stopPropagation();
-        focus(component.id, cameraOverride);
+        focus(component.id);
       }}
       onPointerOver={(e) => {
         e.stopPropagation();
