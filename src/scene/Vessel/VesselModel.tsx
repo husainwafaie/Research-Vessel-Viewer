@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { useSceneStore } from '@store/scene.store';
 
 const VESSEL_URL = '/models/vessel/scene.gltf';
 
@@ -31,6 +32,7 @@ useGLTF.preload(VESSEL_URL);
  */
 export function VesselModel() {
   const { scene } = useGLTF(VESSEL_URL);
+  const setMeshRegistry = useSceneStore((s) => s.setMeshRegistry);
 
   // Clone so we never mutate the useGLTF cache (important under React Strict
   // Mode and when HMR re-mounts this component).
@@ -51,6 +53,21 @@ export function VesselModel() {
 
     return clone;
   }, [scene]);
+
+  // Build the mesh registry from the cloned scene and push it to the store.
+  // MeshHighlighter reads this map to apply selection highlights by name
+  // without traversing the scene graph on every selection change.
+  useEffect(() => {
+    const registry = new Map<string, THREE.Mesh>();
+    vesselScene.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.name) {
+        registry.set(child.name, child);
+      }
+    });
+    setMeshRegistry(registry);
+    // Clear the registry when this model unmounts (e.g. HMR reload).
+    return () => setMeshRegistry(new Map());
+  }, [vesselScene, setMeshRegistry]);
 
   return (
     <primitive
