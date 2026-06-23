@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
+import type * as THREE from 'three';
 import type { CameraTarget } from '@domain/types';
 
 export type CameraMode = 'free' | 'focused' | 'tour';
@@ -10,6 +11,13 @@ interface SceneState {
   hoveredComponentId: string | null;
   cameraTarget: CameraTarget | null;
   isTransitioning: boolean;
+  /**
+   * Registry of Three.js Mesh objects keyed by their sanitized GLTF name.
+   * Populated by VesselModel once the GLTF scene clone is ready; consumed by
+   * MeshHighlighter to apply selection highlights without traversing the scene
+   * graph on every selection change.
+   */
+  meshRegistry: Map<string, THREE.Mesh>;
 }
 
 interface SceneActions {
@@ -19,6 +27,7 @@ interface SceneActions {
   setCameraMode: (mode: CameraMode) => void;
   setTransitioning: (transitioning: boolean) => void;
   resetCamera: (defaultCamera: CameraTarget) => void;
+  setMeshRegistry: (registry: Map<string, THREE.Mesh>) => void;
 }
 
 export const useSceneStore = create<SceneState & SceneActions>()(
@@ -28,6 +37,7 @@ export const useSceneStore = create<SceneState & SceneActions>()(
     hoveredComponentId: null,
     cameraTarget: null,
     isTransitioning: false,
+    meshRegistry: new Map(),
 
     selectComponent: (id, camera) =>
       set({
@@ -57,5 +67,7 @@ export const useSceneStore = create<SceneState & SceneActions>()(
         cameraTarget: defaultCamera,
         isTransitioning: true,
       }),
+
+    setMeshRegistry: (registry) => set({ meshRegistry: registry }),
   })),
 );
