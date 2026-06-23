@@ -5,6 +5,12 @@ import { useSceneStore } from '@store/scene.store';
 
 const VESSEL_URL = '/models/vessel/scene.gltf';
 
+// Point the GLTFLoader's DRACOLoader at our locally-served decoder WASM
+// so Draco-compressed geometry can be decoded without an external CDN fetch.
+// Must be called before useGLTF.preload so the loader is configured when
+// the prefetch request fires.
+useGLTF.setDecoderPath('/draco/');
+
 // Kick off the fetch before the component ever mounts so there's no
 // waterfall between SceneReadyNotifier and the model appearing.
 useGLTF.preload(VESSEL_URL);
