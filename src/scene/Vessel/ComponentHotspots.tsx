@@ -1,15 +1,14 @@
 import { getAllComponents } from '@domain/selectors';
 import { vessel } from '@data/vessel';
-import { PLACEHOLDER_POSITIONS } from '@data/placeholderPositions';
 import { HotspotMarker } from './HotspotMarker';
 import type { Vector3Tuple } from '@domain/types';
 
 /**
  * ComponentHotspots — mounts one HotspotMarker per vessel component.
  *
- * Positions come from PLACEHOLDER_POSITIONS (shared with useComponentFocus)
- * while the real GLTF model is pending. When the real model arrives, delete
- * placeholderPositions.ts and let hotspot positions derive from component.camera.
+ * Hotspot world position is derived from component.camera.target (calibrated
+ * from the real GLTF bounding-box centres in Milestone 2.3).  A floor of 1.5 m
+ * ensures markers never sink below deck level.
  */
 export function ComponentHotspots() {
   const components = getAllComponents(vessel);
@@ -17,22 +16,17 @@ export function ComponentHotspots() {
   return (
     <group name="hotspots">
       {components.map((component) => {
-        const override = PLACEHOLDER_POSITIONS[component.id];
-
-        const hotspotPos: Vector3Tuple = override
-          ? override.hotspot
-          : [
-              component.camera.target[0],
-              Math.max(component.camera.target[1], 1.5),
-              component.camera.target[2],
-            ];
+        const hotspotPos: Vector3Tuple = [
+          component.camera.target[0],
+          Math.max(component.camera.target[1], 1.5),
+          component.camera.target[2],
+        ];
 
         return (
           <HotspotMarker
             key={component.id}
             component={component}
             position={hotspotPos}
-            cameraOverride={override?.camera}
           />
         );
       })}

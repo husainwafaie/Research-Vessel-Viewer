@@ -23,18 +23,19 @@ export const aviationSystem: VesselSystem = {
         { label: 'Night Operations', value: 'Full ICAO lighting' },
       ],
       camera: {
-        position: [0, 14, -20],
-        target: [0, 8, -12],
-        fov: 55,
+        // Helideck mesh centre ≈ [0, 10.36, -23.88]; overhead-ish elevated view
+        position: [22, 22, -8],
+        target:   [0, 10, -24],
+        fov: 50,
       },
       meshBindings: [
         // The RCRV GLTF has no dedicated helideck mesh. The forward deck 3
         // area (Deck 3 front) and mid-ship deck 2 surfaces are the closest
         // visual approximation of the forward helideck landing zone.
-        { meshName: 'Deck 3 front_0', role: 'primary' },
-        { meshName: 'Deck 2 mid_0',   role: 'highlight' },
-        { meshName: 'Deck 2 mid_1',   role: 'highlight' },
-        { meshName: 'Deck 2 mid_2',   role: 'highlight' },
+        { meshName: 'Deck_3_front_0', role: 'primary' },
+        { meshName: 'Deck_2_mid_0',   role: 'highlight' },
+        { meshName: 'Deck_2_mid_1',   role: 'highlight' },
+        { meshName: 'Deck_2_mid_2',   role: 'highlight' },
       ],
       animations: [],
       relatedComponentIds: ['bridge', 'crane_main'],

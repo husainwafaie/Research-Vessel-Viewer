@@ -23,17 +23,18 @@ export const launchSystem: VesselSystem = {
         { label: 'Max Sea State', value: 'SS4' },
       ],
       camera: {
-        position: [-20, 8, 0],
-        target: [-15, 3, 0],
+        // A-Frame mesh centre ≈ [0.49, 8.87, 16.44]; stern-starboard elevated
+        position: [22, 18, 28],
+        target:   [0, 10, 16],
         fov: 50,
       },
       meshBindings: [
         // Crane B = the main stern crane / A-frame LARS on the aft deck
-        { meshName: 'Crane B main_0',          role: 'primary' },
-        { meshName: 'Crane B Arm_0',           role: 'primary' },
-        { meshName: 'Crane B Base_0',          role: 'primary' },
-        { meshName: 'Crane B Base supports_0', role: 'highlight' },
-        { meshName: 'Crane B pulley_0',        role: 'highlight' },
+        { meshName: 'Crane_B_main_0',          role: 'primary' },
+        { meshName: 'Crane_B_Arm_0',           role: 'primary' },
+        { meshName: 'Crane_B_Base_0',          role: 'primary' },
+        { meshName: 'Crane_B_Base_supports_0', role: 'highlight' },
+        { meshName: 'Crane_B_pulley_0',        role: 'highlight' },
       ],
       animations: [
         { id: 'aframe_deploy', label: 'Deploy A-Frame', clipName: 'aframe_swing_out' },
@@ -65,20 +66,21 @@ export const launchSystem: VesselSystem = {
         { label: 'Wire Rope Capacity', value: '200', unit: 'm' },
       ],
       camera: {
-        position: [5, 10, -15],
-        target: [0, 5, -10],
-        fov: 55,
+        // Crane base mesh centre ≈ [4.38, 11.58, -18.22]; midship-fwd starboard
+        position: [22, 20, 0],
+        target:   [4, 12, -18],
+        fov: 52,
       },
       meshBindings: [
         // Deck 3 crane = knuckle-boom crane mounted on the main deck superstructure
-        { meshName: 'Deck 3 crane base_0', role: 'primary' },
-        { meshName: 'Deck 3 crane arm_0',  role: 'primary' },
+        { meshName: 'Deck_3_crane_base_0', role: 'primary' },
+        { meshName: 'Deck_3_crane_arm_0',  role: 'primary' },
         // Effer cranes = additional articulated deck cranes (port/starboard/centre)
-        { meshName: 'Effer Crane Right_0',  role: 'primary' },
-        { meshName: 'Effer Crane Left_0',   role: 'primary' },
-        { meshName: 'Effer Crane Middle_0', role: 'primary' },
-        { meshName: 'Effer Crane Pulley_0', role: 'highlight' },
-        { meshName: 'Crane_Effer.009_0',    role: 'highlight' },
+        { meshName: 'Effer_Crane_Right_0',  role: 'primary' },
+        { meshName: 'Effer_Crane_Left_0',   role: 'primary' },
+        { meshName: 'Effer_Crane_Middle_0', role: 'primary' },
+        { meshName: 'Effer_Crane_Pulley_0', role: 'highlight' },
+        { meshName: 'Crane_Effer009_0',     role: 'highlight' },
       ],
       animations: [
         { id: 'crane_extend', label: 'Extend Boom', clipName: 'crane_boom_extend' },
@@ -103,16 +105,17 @@ export const launchSystem: VesselSystem = {
         { label: 'Control Room', value: '6-seat pilot station' },
       ],
       camera: {
-        position: [-18, 5, -8],
-        target: [-12, 2, -5],
-        fov: 55,
+        // ROV hangar (Cranehouse) centre ≈ [3.39, 8.78, 13.43]; port-elevated
+        position: [-20, 16, 22],
+        target:   [3, 8, 13],
+        fov: 52,
       },
       meshBindings: [
         // Cranehouse = the enclosed equipment building on the aft deck that
         // serves as the ROV hangar and control-room structure.
-        { meshName: '* Cranehouse_0',        role: 'primary' },
-        { meshName: '* Cranehouse_1',        role: 'primary' },
-        { meshName: '* Cranehouse ladder_0', role: 'highlight' },
+        { meshName: '*_Cranehouse_0',        role: 'primary' },
+        { meshName: '*_Cranehouse_1',        role: 'primary' },
+        { meshName: '*_Cranehouse_ladder_0', role: 'highlight' },
       ],
       animations: [
         { id: 'rov_deploy', label: 'Deploy ROV', clipName: 'rov_launch_sequence' },
