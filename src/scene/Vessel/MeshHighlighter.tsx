@@ -1,50 +1,61 @@
 import { useEffect, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSceneStore } from '@store/scene.store';
 import { getComponentById } from '@domain/selectors';
 import { vessel } from '@data/vessel';
-
 import type { MeshBindingRole } from '@domain/types';
 
-/** Emissive colour / intensity applied per binding role. */
-const HIGHLIGHT: Partial<Record<MeshBindingRole, { color: string; intensity: number }>> = {
-  primary:   { color: '#0ea5e9', intensity: 0.7 },   // sky-500 — strong glow
-  highlight: { color: '#0369a1', intensity: 0.35 },   // sky-700 — subtle accent
-  // 'collision' meshes are invisible geometry — no emissive applied
+/**
+ * Per-role pulse parameters.
+ * emissiveIntensity oscillates between min and max on a ~2 s sine cycle.
+ */
+const PULSE: Partial<Record<MeshBindingRole, {
+  color: string;
+  min:   number;
+  max:   number;
+}>> = {
+  primary:   { color: '#0ea5e9', min: 0.35, max: 0.85 },  // sky-500
+  highlight: { color: '#0369a1', min: 0.12, max: 0.32 },  // sky-700
+  // 'collision' — invisible geometry, no highlight
 };
 
-interface SavedState {
-  mesh:              THREE.Mesh;
-  originalMaterial:  THREE.Material | THREE.Material[];
+/** Restore data: the original material so we can swap it back cleanly. */
+interface SavedMesh {
+  mesh:             THREE.Mesh;
+  originalMaterial: THREE.Material | THREE.Material[];
+}
+
+/** Animation data: what useFrame mutates every tick. */
+interface AnimatedMat {
+  mat: THREE.MeshStandardMaterial;
+  min: number;
+  max: number;
 }
 
 /**
  * MeshHighlighter — purely logical R3F component (renders null).
  *
- * Watches selectedComponentId in the scene store and applies emissive
- * highlights to every mesh listed in the component's meshBindings.
+ * On component selection: clones each bound mesh's material, sets the emissive
+ * colour, and registers it for per-frame pulse animation.
+ * On deselection: restores original materials and disposes the clones.
  *
- * Strategy:
- *   • On selection:   clone the mesh's material so sibling meshes sharing the
- *                     same GLTF material are unaffected; then set emissive.
- *   • On deselection: swap the original material back to release the clone.
- *
- * Cloning (not patching) is important here because the GLTF has 9 materials
- * shared across 136 meshes — patching in place would highlight every mesh
- * that shares the same material.
+ * Cloning (not patching) is critical — the GLTF has 9 materials shared across
+ * 136 meshes, so patching in-place would affect all siblings.
  */
 export function MeshHighlighter() {
   const selectedId = useSceneStore((s) => s.selectedComponentId);
   const registry   = useSceneStore((s) => s.meshRegistry);
 
-  // Meshes we have currently highlighted — kept in a ref so restore logic
-  // does not need to be in the dependency array of the effect.
-  const highlightedRef = useRef<SavedState[]>([]);
+  /** Meshes whose materials we swapped — needed to restore them. */
+  const savedRef = useRef<SavedMesh[]>([]);
+  /** Cloned materials currently being animated by useFrame. */
+  const animatedRef = useRef<AnimatedMat[]>([]);
 
+  // ── Selection effect: swap materials in/out ──────────────────────────────
   useEffect(() => {
-    // ── Restore previously highlighted meshes ──────────────────────────────
-    for (const { mesh, originalMaterial } of highlightedRef.current) {
-      // Dispose the cloned material(s) we created to avoid GPU leaks.
+    // Restore previously highlighted meshes and dispose clones.
+    for (const { mesh, originalMaterial } of savedRef.current) {
       if (Array.isArray(mesh.material)) {
         mesh.material.forEach((m) => m.dispose());
       } else {
@@ -52,46 +63,61 @@ export function MeshHighlighter() {
       }
       mesh.material = originalMaterial;
     }
-    highlightedRef.current = [];
+    savedRef.current   = [];
+    animatedRef.current = [];
 
     if (!selectedId) return;
 
     const component = getComponentById(vessel, selectedId);
     if (!component || component.meshBindings.length === 0) return;
 
-    // ── Apply highlight to bound meshes ────────────────────────────────────
+    // Apply highlight to each bound mesh.
     for (const binding of component.meshBindings) {
       const mesh = registry.get(binding.meshName);
       if (!mesh) continue;
 
-      const cfg = HIGHLIGHT[binding.role];
-      if (!cfg) continue; // 'collision' role — no visual highlight
+      const cfg = PULSE[binding.role];
+      if (!cfg) continue;
 
-      // Save and swap material.
       const originalMaterial = mesh.material;
-      const cloned = Array.isArray(originalMaterial)
-        ? originalMaterial.map((m) => {
-            const c = m.clone() as THREE.MeshStandardMaterial;
-            c.emissive.set(cfg.color);
-            c.emissiveIntensity = cfg.intensity;
-            return c;
-          })
-        : (() => {
-            const c = (originalMaterial as THREE.MeshStandardMaterial).clone();
-            c.emissive.set(cfg.color);
-            c.emissiveIntensity = cfg.intensity;
-            return c;
-          })();
 
-      mesh.material = cloned as THREE.Material | THREE.Material[];
-      highlightedRef.current.push({ mesh, originalMaterial });
+      // Clone the material(s) so siblings sharing the same GLTF material
+      // are not affected.
+      if (Array.isArray(originalMaterial)) {
+        const clones = originalMaterial.map((m) => {
+          const c = m.clone() as THREE.MeshStandardMaterial;
+          c.emissive.set(cfg.color);
+          c.emissiveIntensity = cfg.min;
+          return c;
+        });
+        mesh.material = clones;
+        clones.forEach((c) => animatedRef.current.push({ mat: c, min: cfg.min, max: cfg.max }));
+      } else {
+        const c = (originalMaterial as THREE.MeshStandardMaterial).clone();
+        c.emissive.set(cfg.color);
+        c.emissiveIntensity = cfg.min;
+        mesh.material = c;
+        animatedRef.current.push({ mat: c, min: cfg.min, max: cfg.max });
+      }
+
+      savedRef.current.push({ mesh, originalMaterial });
     }
   }, [selectedId, registry]);
 
-  // Clean up on unmount.
+  // ── Per-frame pulse ──────────────────────────────────────────────────────
+  useFrame(({ clock }) => {
+    if (animatedRef.current.length === 0) return;
+    // Breathing sine: period = 2 s, always in [0, 1]
+    const pulse = 0.5 + 0.5 * Math.sin(clock.getElapsedTime() * Math.PI);
+    for (const { mat, min, max } of animatedRef.current) {
+      mat.emissiveIntensity = min + (max - min) * pulse;
+    }
+  });
+
+  // ── Unmount cleanup ──────────────────────────────────────────────────────
   useEffect(() => {
     return () => {
-      for (const { mesh, originalMaterial } of highlightedRef.current) {
+      for (const { mesh, originalMaterial } of savedRef.current) {
         if (Array.isArray(mesh.material)) {
           mesh.material.forEach((m) => m.dispose());
         } else {
@@ -99,7 +125,8 @@ export function MeshHighlighter() {
         }
         mesh.material = originalMaterial;
       }
-      highlightedRef.current = [];
+      savedRef.current    = [];
+      animatedRef.current = [];
     };
   }, []);
 
