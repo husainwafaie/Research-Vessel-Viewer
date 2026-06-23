@@ -1,6 +1,5 @@
 import { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 
 import { Ocean, VesselSky, Lighting, Atmosphere } from './Environment';
@@ -10,6 +9,7 @@ import { ComponentHotspots } from './Vessel/ComponentHotspots';
 import { MeshHighlighter } from './Vessel/MeshHighlighter';
 import { TourDriver } from './Tour/TourDriver';
 import { SceneReadyNotifier } from './SceneReadyNotifier';
+import { PostProcessing } from './PostProcessing';
 import { vessel } from '@data/vessel';
 import { useSceneStore } from '@store/scene.store';
 import { useUIStore } from '@store/ui.store';
@@ -84,14 +84,7 @@ export function Scene() {
       {/* Bridges Three.js load progress into the UI store for LoadingScreen */}
       <SceneReadyNotifier />
 
-      <EffectComposer>
-        <Bloom
-          luminanceThreshold={0.85}
-          luminanceSmoothing={0.9}
-          intensity={0.4}
-          mipmapBlur
-        />
-      </EffectComposer>
+      <PostProcessing />
     </Canvas>
   );
 }
