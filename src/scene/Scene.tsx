@@ -7,6 +7,7 @@ import { Ocean, VesselSky, Lighting, Atmosphere } from './Environment';
 import { CameraController } from './Camera/CameraController';
 import { VesselModel } from './Vessel/VesselModel';
 import { ComponentHotspots } from './Vessel/ComponentHotspots';
+import { MeshHighlighter } from './Vessel/MeshHighlighter';
 import { TourDriver } from './Tour/TourDriver';
 import { SceneReadyNotifier } from './SceneReadyNotifier';
 import { vessel } from '@data/vessel';
@@ -68,6 +69,8 @@ export function Scene() {
         <Lighting />
         <Ocean />
         <VesselModel />
+        {/* Applies emissive highlight to bound meshes when a component is selected */}
+        <MeshHighlighter />
         {/* Interactive hotspots for each vessel component */}
         <ComponentHotspots />
       </Suspense>
