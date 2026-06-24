@@ -1,6 +1,7 @@
 import { ComponentPanel } from '@ui/panels/ComponentPanel';
 import { SystemsSidebar } from '@ui/panels/SystemsSidebar';
 import { TourPanel } from '@ui/panels/TourPanel';
+import { DepthGauge } from '@ui/panels/DepthGauge';
 import { useUIStore } from '@store/ui.store';
 import { useComponentFocus } from '@hooks/useComponentFocus';
 import { useKeyboardShortcuts } from '@hooks/useKeyboardShortcuts';
@@ -37,6 +38,9 @@ export function AppShell() {
   const resetCamera        = useSceneStore((s) => s.resetCamera);
   const clearSelection     = useSceneStore((s) => s.clearSelection);
   const closePanel         = useUIStore((s) => s.closePanel);
+  const enterUnderwater    = useSceneStore((s) => s.enterUnderwater);
+  const exitUnderwater     = useSceneStore((s) => s.exitUnderwater);
+  const isUnderwater       = useSceneStore((s) => s.cameraMode === 'underwater');
 
   const isTourActive = activeTour !== null;
 
@@ -100,8 +104,37 @@ export function AppShell() {
             </button>
           )}
 
-          {/* Tour launcher — hidden while tour is running */}
+          {/* Dive / Surface toggle — hidden during tour */}
           {!isTourActive && (
+            isUnderwater ? (
+              <button
+                onClick={exitUnderwater}
+                className="glass rounded-lg px-3 py-1.5 text-xs text-cyan-300 hover:text-white transition-colors flex items-center gap-1.5"
+                aria-label="Surface — return to above-water view"
+              >
+                {/* Up arrow */}
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M6 10V2M2 6l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Surface
+              </button>
+            ) : (
+              <button
+                onClick={enterUnderwater}
+                className="glass rounded-lg px-3 py-1.5 text-xs text-ocean-300 hover:text-white transition-colors flex items-center gap-1.5"
+                aria-label="Dive — explore beneath the hull"
+              >
+                {/* Down arrow */}
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M6 2v8M2 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Dive
+              </button>
+            )
+          )}
+
+          {/* Tour launcher — hidden while tour is running or underwater */}
+          {!isTourActive && !isUnderwater && (
             <button
               onClick={() => startTour(allTours[0])}
               className="glass rounded-lg px-3 py-1.5 text-xs text-ocean-300 hover:text-white transition-colors flex items-center gap-1.5"
@@ -136,6 +169,9 @@ export function AppShell() {
       {/* ── Bottom-centre: Tour panel (AnimatePresence handles mount/exit) */}
       <TourPanel />
 
+      {/* ── Bottom-right: Depth gauge — visible in underwater mode only */}
+      <DepthGauge />
+
       {/* ── Bottom: Controls hint + attribution ─────────────── */}
       <footer className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-2">
         <div className="glass rounded-full px-4 py-1.5 flex items-center gap-3 text-xs text-ocean-500 text-data">
@@ -146,6 +182,14 @@ export function AppShell() {
               <span>Space pause</span>
               <span className="text-ocean-700">·</span>
               <span>Esc exit</span>
+            </>
+          ) : isUnderwater ? (
+            <>
+              <span>Drag to orbit hull</span>
+              <span className="text-ocean-700">·</span>
+              <span>Scroll to zoom</span>
+              <span className="text-ocean-700">·</span>
+              <span>Surface to return</span>
             </>
           ) : (
             <>

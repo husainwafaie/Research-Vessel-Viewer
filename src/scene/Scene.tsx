@@ -11,6 +11,8 @@ import { VesselAnimations } from './Vessel/VesselAnimations';
 import { TourDriver } from './Tour/TourDriver';
 import { SceneReadyNotifier } from './SceneReadyNotifier';
 import { PostProcessing } from './PostProcessing';
+import { MarineSnow } from './Underwater/MarineSnow';
+import { UnderwaterBridge } from './Underwater/UnderwaterBridge';
 import { vessel } from '@data/vessel';
 import { useSceneStore } from '@store/scene.store';
 import { useUIStore } from '@store/ui.store';
@@ -86,6 +88,12 @@ export function Scene() {
 
       {/* Bridges Three.js load progress into the UI store for LoadingScreen */}
       <SceneReadyNotifier />
+
+      {/* Underwater: marine snow particles (self-gating on cameraMode) */}
+      <MarineSnow />
+
+      {/* Bridges camera depth to scene store so DepthGauge HUD can read it */}
+      <UnderwaterBridge />
 
       <PostProcessing />
     </Canvas>
