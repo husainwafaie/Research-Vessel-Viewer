@@ -80,11 +80,12 @@ export function MarineSnow() {
   return (
     <points ref={pointsRef}>
       <bufferGeometry>
+        {/* args=[array, itemSize] — the correct R3F constructor pattern;
+            using array/count as JSX props bypasses the constructor and
+            leaves the BufferAttribute in an uninitialised state. */}
         <bufferAttribute
           attach="attributes-position"
-          count={COUNT}
-          array={positions}
-          itemSize={3}
+          args={[positions, 3]}
         />
       </bufferGeometry>
       <pointsMaterial
