@@ -3,7 +3,7 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import type * as THREE from 'three';
 import type { CameraTarget } from '@domain/types';
 
-export type CameraMode = 'free' | 'focused' | 'tour';
+export type CameraMode = 'free' | 'focused' | 'tour' | 'underwater';
 
 interface SceneState {
   cameraMode: CameraMode;
@@ -18,6 +18,12 @@ interface SceneState {
    * graph on every selection change.
    */
   meshRegistry: Map<string, THREE.Mesh>;
+  /**
+   * Camera depth below the water surface in world units.
+   * Updated each frame by UnderwaterBridge when cameraMode === 'underwater'.
+   * Used by the DepthGauge HUD to display current depth.
+   */
+  cameraDepth: number;
 }
 
 interface SceneActions {
@@ -28,6 +34,12 @@ interface SceneActions {
   setTransitioning: (transitioning: boolean) => void;
   resetCamera: (defaultCamera: CameraTarget) => void;
   setMeshRegistry: (registry: Map<string, THREE.Mesh>) => void;
+  /** Transition camera below the waterline into underwater exploration mode. */
+  enterUnderwater: () => void;
+  /** Return to surface free-look from underwater mode. */
+  exitUnderwater: () => void;
+  /** Called each frame by UnderwaterBridge to keep depth reading current. */
+  setCameraDepth: (depth: number) => void;
 }
 
 export const useSceneStore = create<SceneState & SceneActions>()(
@@ -38,6 +50,7 @@ export const useSceneStore = create<SceneState & SceneActions>()(
     cameraTarget: null,
     isTransitioning: false,
     meshRegistry: new Map(),
+    cameraDepth: 0,
 
     selectComponent: (id, camera) =>
       set({
@@ -69,5 +82,25 @@ export const useSceneStore = create<SceneState & SceneActions>()(
       }),
 
     setMeshRegistry: (registry) => set({ meshRegistry: registry }),
+
+    enterUnderwater: () =>
+      set({
+        cameraMode: 'underwater',
+        // Dive beneath the hull, angled upward to see keel and propellers
+        cameraTarget: { position: [25, -20, 65], target: [0, -4, 0] },
+        isTransitioning: true,
+        selectedComponentId: null,
+        cameraDepth: 0,
+      }),
+
+    exitUnderwater: () =>
+      set({
+        cameraMode: 'free',
+        cameraTarget: { position: [80, 30, 120], target: [0, 5, 0] },
+        isTransitioning: true,
+        cameraDepth: 0,
+      }),
+
+    setCameraDepth: (depth) => set({ cameraDepth: depth }),
   })),
 );
