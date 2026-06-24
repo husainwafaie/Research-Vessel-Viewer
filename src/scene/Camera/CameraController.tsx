@@ -25,9 +25,10 @@ export function CameraController() {
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const { camera } = useThree();
 
-  const cameraTarget   = useSceneStore((s) => s.cameraTarget);
+  const cameraTarget    = useSceneStore((s) => s.cameraTarget);
   const isTransitioning = useSceneStore((s) => s.isTransitioning);
   const setTransitioning = useSceneStore((s) => s.setTransitioning);
+  const isUnderwater    = useSceneStore((s) => s.cameraMode === 'underwater');
 
   // Internal lerp targets — we drive these in useFrame
   const lerpPos = useRef<THREE.Vector3>(new THREE.Vector3());
@@ -83,12 +84,14 @@ export function CameraController() {
       dampingFactor={0.06}
       // Disable user input during programmatic transitions
       enabled={!isTransitioning}
-      // Zoom limits
-      minDistance={18}
-      maxDistance={350}
-      // Vertical limits — prevent camera going below water or straight down
-      minPolarAngle={0.08}
-      maxPolarAngle={Math.PI * 0.47}
+      // Zoom limits — much tighter range underwater (close hull inspection)
+      minDistance={isUnderwater ? 5  : 18}
+      maxDistance={isUnderwater ? 120 : 350}
+      // Vertical limits:
+      //   Surface — block camera from going below waterline or straight overhead
+      //   Underwater — allow full vertical range so user can look up at hull keel
+      minPolarAngle={isUnderwater ? 0            : 0.08}
+      maxPolarAngle={isUnderwater ? Math.PI * 0.95 : Math.PI * 0.47}
       // Rotate speed
       rotateSpeed={0.6}
       zoomSpeed={0.8}
