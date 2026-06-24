@@ -12,6 +12,7 @@ import { TourDriver } from './Tour/TourDriver';
 import { SceneReadyNotifier } from './SceneReadyNotifier';
 import { PostProcessing } from './PostProcessing';
 import { MarineSnow } from './Underwater/MarineSnow';
+import { WaterSurface } from './Underwater/WaterSurface';
 import { UnderwaterBridge } from './Underwater/UnderwaterBridge';
 import { vessel } from '@data/vessel';
 import { useSceneStore } from '@store/scene.store';
@@ -36,6 +37,7 @@ export function Scene() {
   const clearSelection = useSceneStore((s) => s.clearSelection);
   const resetCamera    = useSceneStore((s) => s.resetCamera);
   const closePanel     = useUIStore((s) => s.closePanel);
+  const isUnderwater   = useSceneStore((s) => s.cameraMode === 'underwater');
 
   function handlePointerMissed() {
     clearSelection();
@@ -68,7 +70,9 @@ export function Scene() {
       <Atmosphere />
 
       <Suspense fallback={null}>
-        <VesselSky />
+        {/* Sky dome hidden underwater — the camera is below the skybox sphere
+            so it would render incorrectly and break the underwater look */}
+        {!isUnderwater && <VesselSky />}
         <Lighting />
         <Ocean />
         <VesselModel />
@@ -77,7 +81,7 @@ export function Scene() {
         {/* Procedural always-on animations (radar rotation, etc.) */}
         <VesselAnimations />
         {/* Interactive hotspots for each vessel component */}
-        <ComponentHotspots />
+        {!isUnderwater && <ComponentHotspots />}
       </Suspense>
 
       {/* Camera controller always active, not behind Suspense */}
@@ -88,6 +92,9 @@ export function Scene() {
 
       {/* Bridges Three.js load progress into the UI store for LoadingScreen */}
       <SceneReadyNotifier />
+
+      {/* Underwater: shimmering water surface ceiling (BackSide plane at y=0) */}
+      <WaterSurface />
 
       {/* Underwater: marine snow particles (self-gating on cameraMode) */}
       <MarineSnow />
