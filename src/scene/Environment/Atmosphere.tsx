@@ -1,23 +1,34 @@
+import { useSceneStore } from '@store/scene.store';
+
 /**
  * Atmosphere — fog and background color.
  *
- * Using FogExp2 (exponential falloff) rather than linear Fog:
- * - More natural for open water where haze accumulates non-linearly
- * - Less obvious "fog wall" at the far clip distance
+ * Surface mode  (cameraMode !== 'underwater'):
+ *   FogExp2 density 0.0007 — moderate ocean haze, horizon visible at ~1.4 km
+ *   Background #020c1b — deep midnight ocean blue
  *
- * Density tuning:
- * - 0.0005 — very clear, horizon visible at ~2km
- * - 0.0010 — moderate haze, realistic ocean atmosphere
- * - 0.0020 — thick haze, dramatic close-in feel
+ * Underwater mode (cameraMode === 'underwater'):
+ *   FogExp2 density 0.028 — dense, light scatters over a few dozen metres
+ *   Background #000a14 — near-black abyss
+ *   Color #011520 — deep bioluminescent blue-green tint
+ *
+ * R3F reconciles JSX prop changes into Three.js object mutations so we get
+ * smooth instant switching without needing imperative scene.fog assignments.
  */
 export function Atmosphere() {
+  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+
   return (
     <>
-      {/* Deep ocean midnight-blue as canvas background (visible before Sky loads) */}
-      <color attach="background" args={['#020c1b']} />
-
-      {/* Exponential fog — color matches horizon haze in VesselSky golden hour */}
-      <fogExp2 attach="fog" color="#0a1828" density={0.0007} />
+      <color
+        attach="background"
+        args={[isUnderwater ? '#000a14' : '#020c1b']}
+      />
+      <fogExp2
+        attach="fog"
+        color={isUnderwater ? '#011520' : '#0a1828'}
+        density={isUnderwater ? 0.028 : 0.0007}
+      />
     </>
   );
 }
