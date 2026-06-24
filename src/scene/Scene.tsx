@@ -13,7 +13,7 @@ import { SceneReadyNotifier } from './SceneReadyNotifier';
 import { PostProcessing } from './PostProcessing';
 import { MarineSnow } from './Underwater/MarineSnow';
 import { WaterSurface } from './Underwater/WaterSurface';
-import { UnderwaterBridge } from './Underwater/UnderwaterBridge';
+import { CameraDepthWatcher } from './Underwater/CameraDepthWatcher';
 import { vessel } from '@data/vessel';
 import { useSceneStore } from '@store/scene.store';
 import { useUIStore } from '@store/ui.store';
@@ -99,8 +99,9 @@ export function Scene() {
       {/* Underwater: marine snow particles (self-gating on cameraMode) */}
       <MarineSnow />
 
-      {/* Bridges camera depth to scene store so DepthGauge HUD can read it */}
-      <UnderwaterBridge />
+      {/* Watches camera Y each frame — auto-switches underwater/surface mode
+          and keeps cameraDepth current for the DepthGauge HUD */}
+      <CameraDepthWatcher />
 
       <PostProcessing />
     </Canvas>
