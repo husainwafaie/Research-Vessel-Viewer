@@ -26,6 +26,15 @@ import { useSceneStore } from '@store/scene.store';
  *   Only auto-switches between 'free' ↔ 'underwater'.  Does not interfere
  *   with 'focused' or 'tour' modes — those have their own camera ownership.
  *
+ * isTransitioning guard (critical):
+ *   When the Dive button fires enterUnderwater(), it sets cameraMode =
+ *   'underwater' immediately but the camera is still above y = 0.  Without
+ *   this guard the watcher fires on the very next frame, sees the camera above
+ *   EXIT_Y while mode is 'underwater', and calls setCameraMode('free') —
+ *   cancelling the dive before the lerp moves the camera anywhere.  We skip
+ *   all mode-switching logic while isTransitioning is true so button-driven
+ *   transitions own the mode for their full duration.
+ *
  * Depth gauge:
  *   Also updates cameraDepth each frame when underwater, replacing the
  *   separate UnderwaterBridge component which did the same job.
@@ -38,8 +47,13 @@ const DEPTH_SCALE =  2.8;   // multiplier to give more dramatic depth numbers
 export function CameraDepthWatcher() {
   useFrame(({ camera }) => {
     const store = useSceneStore.getState();
-    const { cameraMode, setCameraMode, setCameraDepth } = store;
+    const { cameraMode, isTransitioning, setCameraMode, setCameraDepth } = store;
     const y = camera.position.y;
+
+    // Let button-triggered transitions own the mode for their full duration.
+    // Without this, the watcher immediately undoes enterUnderwater() because
+    // the camera starts above EXIT_Y while cameraMode is already 'underwater'.
+    if (isTransitioning) return;
 
     // Don't interfere with tour or focused-component camera ownership
     if (cameraMode === 'tour' || cameraMode === 'focused') return;

@@ -1,62 +1,96 @@
-import { useEffect } from 'react';
-import { useThree } from '@react-three/fiber';
+import { useEffect, useRef } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSceneStore } from '@store/scene.store';
 
-// Pre-built colour/density constants — avoids allocating on every render
-const SURFACE = {
-  background: new THREE.Color('#020c1b'),
-  fogColor:   new THREE.Color('#0a1828'),
-  density:    0.0007,
-} as const;
+// ── Surface colours ───────────────────────────────────────────────────────────
+const SURFACE_BG      = new THREE.Color('#020c1b');
+const SURFACE_FOG     = new THREE.Color('#0a1828');
+const SURFACE_DENSITY = 0.0007;
 
-const UNDERWATER = {
-  background: new THREE.Color('#000508'),
-  fogColor:   new THREE.Color('#010e18'),
-  density:    0.032,
-} as const;
+// ── Underwater colour gradient — shallow → deep ───────────────────────────────
+// Shallow (just below surface, depth ≈ 0–20 m display)
+const SHALLOW_BG      = new THREE.Color('#000f1f');
+const SHALLOW_FOG     = new THREE.Color('#011828');
+const SHALLOW_DENSITY = 0.022;
+
+// Deep (maximum depth, depth ≈ 60 m display)
+const DEEP_BG         = new THREE.Color('#000208');
+const DEEP_FOG        = new THREE.Color('#000510');
+const DEEP_DENSITY    = 0.048;
+
+// Max display depth at which colour is fully "deep"
+const MAX_DEPTH = 60;
+
+// Lerp speed for smooth transition — higher = snappier surface/underwater swap
+const LERP_SPEED = 3.0;
 
 /**
- * Atmosphere — imperative fog and background color controller.
+ * Atmosphere — imperative fog and background controller with depth-based
+ * colour shift underwater.
  *
- * We use useThree + useEffect rather than JSX <color> / <fogExp2> because:
- *   - R3F does NOT recreate Three.js objects when `args` changes — the
- *     constructor is only called once, so `<color args={[newColor]}>` is a
- *     no-op after mount.
- *   - scene.fog.color is a THREE.Color instance; assigning a string to it via
- *     a JSX prop silently does nothing.
- *   - Imperative `.set()` / property assignment is the only reliable path.
+ * Surface: static midnight-blue fog and background (set via useEffect).
  *
- * Surface (default):
- *   FogExp2 density 0.0007 — moderate ocean haze, horizon visible ~1.4 km
- *   Background #020c1b — deep midnight ocean blue
+ * Underwater: useFrame reads cameraDepth from the store each frame (no
+ * re-render subscription needed) and lerps fog colour, density, and
+ * background between:
+ *   shallow (depth 0)  — dark blue-green, moderate density
+ *   deep    (depth 60) — near-black with faint teal tint, dense fog
  *
- * Underwater:
- *   FogExp2 density 0.032 — dense scatter, visibility ~30 m
- *   Background #000508 — near-black abyss
+ * The lerp uses a smooth step on normalised depth, so colour darkens
+ * rapidly at first then asymptotes toward true black at depth.
+ * LERP_SPEED smooths the transition when surfacing or diving quickly.
  */
 export function Atmosphere() {
   const { scene } = useThree();
   const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
 
-  // Initialise scene fog on mount (runs once, before any mode switch)
+  // Working colour objects — mutated each frame to avoid GC pressure
+  const workBg  = useRef(new THREE.Color());
+  const workFog = useRef(new THREE.Color());
+
+  // Initialise fog once on mount
   useEffect(() => {
-    scene.fog        = new THREE.FogExp2(SURFACE.fogColor.getHex(), SURFACE.density);
-    scene.background = SURFACE.background.clone();
+    scene.fog        = new THREE.FogExp2(SURFACE_FOG.getHex(), SURFACE_DENSITY);
+    scene.background = SURFACE_BG.clone();
   }, [scene]);
 
-  // Imperatively switch fog and background whenever the camera mode changes
+  // Snap back to surface values immediately when surfacing
   useEffect(() => {
-    const cfg = isUnderwater ? UNDERWATER : SURFACE;
-
-    if (scene.fog instanceof THREE.FogExp2) {
-      scene.fog.color.copy(cfg.fogColor);
-      scene.fog.density = cfg.density;
-    }
-    if (scene.background instanceof THREE.Color) {
-      scene.background.copy(cfg.background);
+    if (!isUnderwater) {
+      if (scene.fog instanceof THREE.FogExp2) {
+        scene.fog.color.copy(SURFACE_FOG);
+        scene.fog.density = SURFACE_DENSITY;
+      }
+      if (scene.background instanceof THREE.Color) {
+        scene.background.copy(SURFACE_BG);
+      }
     }
   }, [isUnderwater, scene]);
+
+  // Per-frame depth-based colour interpolation (underwater only)
+  useFrame((_, delta) => {
+    if (!(scene.fog instanceof THREE.FogExp2)) return;
+    if (!(scene.background instanceof THREE.Color)) return;
+
+    const { cameraMode, cameraDepth } = useSceneStore.getState();
+    if (cameraMode !== 'underwater') return;
+
+    // Normalised depth 0–1 with smooth-step so darkening is fastest near
+    // the surface where the colour change is most perceptible
+    const t = THREE.MathUtils.smoothstep(cameraDepth / MAX_DEPTH, 0, 1);
+
+    // Target colours this frame
+    workFog.current.lerpColors(SHALLOW_FOG, DEEP_FOG, t);
+    workBg.current.lerpColors(SHALLOW_BG, DEEP_BG, t);
+    const targetDensity = THREE.MathUtils.lerp(SHALLOW_DENSITY, DEEP_DENSITY, t);
+
+    // Smooth lerp toward target (avoids instant pop when depth changes fast)
+    const k = Math.min(1, LERP_SPEED * delta);
+    scene.fog.color.lerp(workFog.current, k);
+    scene.fog.density += (targetDensity - scene.fog.density) * k;
+    scene.background.lerp(workBg.current, k);
+  });
 
   return null;
 }
