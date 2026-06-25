@@ -12,7 +12,11 @@ import { TourDriver } from './Tour/TourDriver';
 import { SceneReadyNotifier } from './SceneReadyNotifier';
 import { PostProcessing } from './PostProcessing';
 import { MarineSnow } from './Underwater/MarineSnow';
+import { Bubbles } from './Underwater/Bubbles';
 import { WaterSurface } from './Underwater/WaterSurface';
+import { CausticProjector } from './Underwater/CausticProjector';
+import { LightShafts } from './Underwater/LightShafts';
+import { Seafloor } from './Underwater/Seafloor';
 import { CameraDepthWatcher } from './Underwater/CameraDepthWatcher';
 import { vessel } from '@data/vessel';
 import { useSceneStore } from '@store/scene.store';
@@ -93,11 +97,19 @@ export function Scene() {
       {/* Bridges Three.js load progress into the UI store for LoadingScreen */}
       <SceneReadyNotifier />
 
-      {/* Underwater: shimmering water surface ceiling (BackSide plane at y=0) */}
+      {/* ── Underwater effects (all self-gate on cameraMode) ─────────────── */}
+      {/* Shimmering BackSide water-surface ceiling at y ≈ 0 */}
       <WaterSurface />
-
-      {/* Underwater: marine snow particles (self-gating on cameraMode) */}
+      {/* Sandy animated seafloor plane at y = −55 */}
+      <Seafloor />
+      {/* Additive caustic light patterns projected downward from near-surface */}
+      <CausticProjector />
+      {/* Volumetric god-ray light shaft columns from the surface */}
+      <LightShafts />
+      {/* Organic detritus drifting downward */}
       <MarineSnow />
+      {/* Rising air bubbles from hull surfaces */}
+      <Bubbles />
 
       {/* Watches camera Y each frame — auto-switches underwater/surface mode
           and keeps cameraDepth current for the DepthGauge HUD */}
