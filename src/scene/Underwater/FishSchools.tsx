@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSceneStore } from '@store/scene.store';
@@ -21,7 +21,32 @@ import { createFishGeometry } from './fishGeometry';
  * Hull avoidance is by construction: orbit semi-axes minus school radius and
  * wander always clear the keep-out box |x| < 12, |z| < 38, y > −7 around the
  * hull (keel y ≈ −2.94), with a per-frame centre clamp as belt-and-braces.
+ *
+ * Tail undulation runs on the GPU: MeshStandardMaterial is patched via
+ * onBeforeCompile (rather than a raw ShaderMaterial) so fish keep scene
+ * lighting AND the FogExp2 that Atmosphere maintains — a bare ShaderMaterial
+ * would pop through the underwater fog. Each instance carries an aPhase
+ * attribute so tails never wag in sync.
  */
+
+// Injected after <common>: uniforms + per-instance wag phase
+const FISH_VERT_DECLS = /* glsl */ `
+  uniform float uTime;
+  uniform float uTailFreq;
+  uniform float uWagAmp;
+  attribute float aPhase;
+`;
+
+// Injected after <begin_vertex> ("transformed" now exists). Local z runs
+// tail (−0.7 incl. fin) → head (+0.5); the wag weight ramps up toward the
+// tail and the position.z term turns the sine into a travelling body wave.
+const FISH_VERT_WAG = /* glsl */ `
+  float tailWeight = 1.0 - smoothstep(-0.5, 0.35, position.z);
+  transformed.x += sin(uTime * uTailFreq + aPhase + position.z * 4.0)
+                   * uWagAmp * tailWeight;
+`;
+
+const WAG_AMP = 0.07; // lateral tail sweep at unit body length
 
 interface SpeciesConfig {
   name: string;
@@ -94,6 +119,7 @@ interface SpeciesData {
   wanderPhase: Float32Array; // 3 per fish
   scales: Float32Array;      // 1 per fish — body length
   phases: Float32Array;      // 1 per fish — tail-wag phase offset
+  tints: Float32Array;       // 1 per fish — lightness jitter (0–1)
 }
 
 /** Deterministic PRNG so layouts survive remounts (mulberry32). */
@@ -132,6 +158,7 @@ function buildSpeciesData(cfg: SpeciesConfig, seed: number): SpeciesData {
   const wanderPhase = new Float32Array(count * 3);
   const scales = new Float32Array(count);
   const phases = new Float32Array(count);
+  const tints = new Float32Array(count);
 
   for (let i = 0; i < count; i++) {
     const school = schools[Math.floor(i / cfg.fishPerSchool)];
@@ -147,9 +174,12 @@ function buildSpeciesData(cfg: SpeciesConfig, seed: number): SpeciesData {
     }
     scales[i] = range(cfg.bodyLength);
     phases[i] = rand() * Math.PI * 2;
+    tints[i] = rand();
   }
 
-  return { cfg, count, schools, offsets, wanderFreq, wanderPhase, scales, phases };
+  return {
+    cfg, count, schools, offsets, wanderFreq, wanderPhase, scales, phases, tints,
+  };
 }
 
 const SPECIES_DATA = SPECIES.map((cfg, i) => buildSpeciesData(cfg, 0xf15c + i * 97));
@@ -160,21 +190,52 @@ function Species({ data }: { data: SpeciesData }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const { cfg } = data;
 
-  const geometry = useMemo(
-    () => createFishGeometry(1, cfg.bodyAspect),
-    [cfg.bodyAspect],
-  );
+  // Patched-shader uniforms captured in onBeforeCompile so useFrame can
+  // tick uTime without recompiling
+  const shaderUniforms = useRef<Record<string, THREE.IUniform> | null>(null);
 
-  const material = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: cfg.color,
-        roughness: 0.4,
-        metalness: 0.45,
-        side: THREE.DoubleSide, // tail fin is a flat quad
-      }),
-    [cfg.color],
-  );
+  const geometry = useMemo(() => {
+    const geo = createFishGeometry(1, cfg.bodyAspect);
+    // Per-instance tail-wag phase — InstancedMesh advances this per instance
+    geo.setAttribute('aPhase', new THREE.InstancedBufferAttribute(data.phases, 1));
+    return geo;
+  }, [cfg.bodyAspect, data.phases]);
+
+  const material = useMemo(() => {
+    const mat = new THREE.MeshStandardMaterial({
+      color: cfg.color,
+      roughness: 0.4,
+      metalness: 0.45,
+      side: THREE.DoubleSide, // tail fin is a flat quad
+    });
+    mat.onBeforeCompile = (shader: THREE.WebGLProgramParametersWithUniforms) => {
+      shader.uniforms.uTime = { value: 0 };
+      shader.uniforms.uTailFreq = { value: cfg.tailFreq };
+      shader.uniforms.uWagAmp = { value: WAG_AMP };
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', `#include <common>\n${FISH_VERT_DECLS}`)
+        .replace('#include <begin_vertex>', `#include <begin_vertex>\n${FISH_VERT_WAG}`);
+      shaderUniforms.current = shader.uniforms;
+    };
+    // Distinct cache key: three must not share this patched program with
+    // vanilla MeshStandardMaterials elsewhere in the scene
+    mat.customProgramCacheKey = () => `fish-${cfg.name}`;
+    return mat;
+  }, [cfg.color, cfg.name, cfg.tailFreq]);
+
+  // Per-fish colour tint via the built-in instanceColor path (set once)
+  useEffect(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    const base = new THREE.Color(cfg.color);
+    const tinted = new THREE.Color();
+    for (let i = 0; i < data.count; i++) {
+      const jitter = 1 + (data.tints[i] - 0.5) * 2 * cfg.tintJitter;
+      tinted.copy(base).multiplyScalar(jitter);
+      mesh.setColorAt(i, tinted);
+    }
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, [cfg.color, cfg.tintJitter, data]);
 
   // Scratch objects reused across all instances each frame
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -186,6 +247,9 @@ function Species({ data }: { data: SpeciesData }) {
 
     const t = clock.getElapsedTime();
     const { schools, offsets, wanderFreq, wanderPhase, scales } = data;
+
+    // Drive the GPU tail-wag (uniforms exist once the shader has compiled)
+    if (shaderUniforms.current) shaderUniforms.current.uTime.value = t;
 
     for (let s = 0; s < schools.length; s++) {
       const sc = schools[s];
