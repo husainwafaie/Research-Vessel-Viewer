@@ -91,6 +91,40 @@ const SPECIES: SpeciesConfig[] = [
     wanderAmp: 0.8,
     tailFreq: 6.5,
   },
+  {
+    // Mid-water schooling fish — larger, slower, steel-blue
+    name: 'blue-jack',
+    schoolCount: 2,
+    fishPerSchool: 22,
+    bodyLength: [2.2, 3.0],
+    bodyAspect: 0.32,
+    color: '#4a7a96',
+    tintJitter: 0.08,
+    yBand: [-26, -13],
+    orbitX: [24, 30],
+    orbitZ: [50, 62],
+    orbitPeriod: [90, 120],
+    schoolRadius: [7, 9],
+    wanderAmp: 1.2,
+    tailFreq: 3.2,
+  },
+  {
+    // Solitary bottom-dwellers cruising above the seafloor (y = −55)
+    name: 'grouper',
+    schoolCount: 4,
+    fishPerSchool: 1,
+    bodyLength: [4.5, 6.0],
+    bodyAspect: 0.36,
+    color: '#4a5248',
+    tintJitter: 0.1,
+    yBand: [-48, -36],
+    orbitX: [30, 45],
+    orbitZ: [55, 75],
+    orbitPeriod: [180, 260],
+    schoolRadius: [0, 0],
+    wanderAmp: 1.5,
+    tailFreq: 1.3,
+  },
 ];
 
 /* ── Static per-school / per-fish parameters ───────────────────────────────
@@ -241,7 +275,11 @@ function Species({ data }: { data: SpeciesData }) {
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const lookTarget = useMemo(() => new THREE.Vector3(), []);
 
-  useFrame(({ clock }) => {
+  // Every school must fill its matrices at least once before the
+  // distance-culling shortcut may skip it (matrices start as identity)
+  const hasFilled = useRef(false);
+
+  useFrame(({ clock, camera }) => {
     const mesh = meshRef.current;
     if (!mesh) return;
 
@@ -268,6 +306,16 @@ function Species({ data }: { data: SpeciesData }) {
 
       // Safety clamp: keep the school centre out of the hull keep-out box
       if (Math.abs(cx) < 14 && Math.abs(cz) < 40 && cy > -9) cy = -9;
+
+      // Beyond fog visibility (~60–130 units) the school is invisible —
+      // skip its matrix loop. Positions are pure functions of t, so
+      // resuming later is seamless (no accumulated state, no pop).
+      if (hasFilled.current) {
+        const dx = cx - camera.position.x;
+        const dy = cy - camera.position.y;
+        const dz = cz - camera.position.z;
+        if (dx * dx + dy * dy + dz * dz > 100 * 100) continue;
+      }
 
       for (let j = 0; j < cfg.fishPerSchool; j++) {
         const i = s * cfg.fishPerSchool + j;
@@ -304,6 +352,7 @@ function Species({ data }: { data: SpeciesData }) {
       }
     }
 
+    hasFilled.current = true;
     mesh.instanceMatrix.needsUpdate = true;
   });
 
