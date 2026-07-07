@@ -5,6 +5,7 @@ import { DepthGauge } from '@ui/panels/DepthGauge';
 import { useUIStore } from '@store/ui.store';
 import { useComponentFocus } from '@hooks/useComponentFocus';
 import { useKeyboardShortcuts } from '@hooks/useKeyboardShortcuts';
+import { useUnderwaterAudio } from '@hooks/useUnderwaterAudio';
 import { allTours } from '@data/tours';
 import { useTourStore } from '@store/tour.store';
 import { useSceneStore } from '@store/scene.store';
@@ -41,11 +42,16 @@ export function AppShell() {
   const enterUnderwater    = useSceneStore((s) => s.enterUnderwater);
   const exitUnderwater     = useSceneStore((s) => s.exitUnderwater);
   const isUnderwater       = useSceneStore((s) => s.cameraMode === 'underwater');
+  const audioMuted         = useUIStore((s) => s.audioMuted);
+  const toggleAudioMuted   = useUIStore((s) => s.toggleAudioMuted);
 
   const isTourActive = activeTour !== null;
 
   // Global keyboard shortcuts: Escape, Arrow keys, Space
   useKeyboardShortcuts();
+
+  // Procedural underwater ambience — follows dive state and depth
+  useUnderwaterAudio();
 
   function handleReset() {
     clearSelection();
@@ -101,6 +107,30 @@ export function AppShell() {
                 <path d="M1 2v4h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               Overview
+            </button>
+          )}
+
+          {/* Ambience mute — only meaningful underwater, where audio plays */}
+          {isUnderwater && (
+            <button
+              onClick={toggleAudioMuted}
+              className="glass rounded-lg px-2.5 py-1.5 text-xs text-ocean-300 hover:text-white transition-colors flex items-center"
+              aria-label={audioMuted ? 'Unmute underwater ambience' : 'Mute underwater ambience'}
+              aria-pressed={audioMuted}
+            >
+              {audioMuted ? (
+                /* Speaker with slash */
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2 5v4h2.5L8 12V2L4.5 5H2z" fill="currentColor" />
+                  <path d="M10 5l3 4M13 5l-3 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                </svg>
+              ) : (
+                /* Speaker with waves */
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2 5v4h2.5L8 12V2L4.5 5H2z" fill="currentColor" />
+                  <path d="M10 5.5a2.5 2.5 0 0 1 0 3M11.5 4a4.5 4.5 0 0 1 0 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                </svg>
+              )}
             </button>
           )}
 
