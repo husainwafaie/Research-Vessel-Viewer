@@ -21,9 +21,10 @@ import { vessel } from '@data/vessel';
 const LERP_SPEED = 2.5; // units per second feel — higher = snappier transition
 const LERP_EPSILON = 0.001; // stop lerping when this close
 
-// The seafloor plane sits at y = −55 and is front-side only — the camera
-// passing through it would see the floor vanish. Keep orbit and pan above it.
-const FLOOR_CLAMP_Y = -52;
+// The seafloor base plane sits at y = −55 with dunes rising ~6 units above
+// it (see seafloorHeight.ts), and is front-side only — the camera passing
+// through it would see the floor vanish. Keep orbit and pan above the crests.
+const FLOOR_CLAMP_Y = -47;
 
 export function CameraController() {
   const controlsRef = useRef<OrbitControlsImpl>(null);

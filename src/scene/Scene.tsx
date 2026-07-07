@@ -17,6 +17,7 @@ import { WaterSurface } from './Underwater/WaterSurface';
 import { CausticProjector } from './Underwater/CausticProjector';
 import { LightShafts } from './Underwater/LightShafts';
 import { Seafloor } from './Underwater/Seafloor';
+import { SeafloorScatter } from './Underwater/SeafloorScatter';
 import { FishSchools } from './Underwater/FishSchools';
 import { Drifters } from './Underwater/Drifters';
 import { HullCaustics } from './Underwater/HullCaustics';
@@ -103,8 +104,10 @@ export function Scene() {
       {/* ── Underwater effects (all self-gate on cameraMode) ─────────────── */}
       {/* Shimmering BackSide water-surface ceiling at y ≈ 0 */}
       <WaterSurface />
-      {/* Sandy animated seafloor plane at y = −55 */}
+      {/* Sandy animated seafloor with procedural dune relief at y = −55 */}
       <Seafloor />
+      {/* Instanced rocks and debris seated on the seafloor terrain */}
+      <SeafloorScatter />
       {/* Additive caustic light patterns projected downward from near-surface */}
       <CausticProjector />
       {/* Volumetric god-ray light shaft columns from the surface */}

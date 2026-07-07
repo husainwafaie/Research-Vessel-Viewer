@@ -2,27 +2,37 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSceneStore } from '@store/scene.store';
+import { TERRAIN_GLSL } from './seafloorHeight';
 
 /**
- * Seafloor — a procedurally shaded ocean bottom plane.
+ * Seafloor — a procedurally shaded and displaced ocean bottom.
  *
- * Positioned at y = −55 (≈ 154 m depth at the DEPTH_SCALE=2.8 display
- * multiplier), below the vessel's keel (y ≈ −3), giving context and scale
- * to the underwater space.  The plane is large enough that fog obscures its
- * edges before they become visible.
+ * Base plane at y = −55 (≈ 154 m display depth at DEPTH_SCALE=2.8), below
+ * the vessel's keel (y ≈ −3).  The vertex shader raises a static dune field
+ * from the shared terrainHeight() definition (seafloorHeight.ts — the same
+ * formula SeafloorScatter uses in JS to seat rocks on the surface), and the
+ * fragment shader darkens valleys for cheap relief shading.
  *
- * Shader produces a sandy ripple pattern using two-octave value noise with
- * a slow scroll to mimic current-driven sediment movement.  Subtle green-grey
- * tinting reflects the deep-ocean colour temperature.  No external texture
- * is required — everything is procedural.
+ * The sandy ripple pattern is two-octave value noise with a slow scroll to
+ * mimic current-driven sediment movement.  No external texture is required —
+ * everything is procedural.
  */
 
 const FLOOR_VERT = /* glsl */ `
   varying vec2 vUv;
   varying vec3 vWorldPos;
+  varying float vHeight;
+
+  ${TERRAIN_GLSL}
+
   void main() {
     vUv = uv;
-    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+    // Static dune displacement along local +Z (world +Y after the −90°
+    // X-rotation), evaluated on the pre-displacement world XZ position
+    vec4 flat_ = modelMatrix * vec4(position, 1.0);
+    float h = terrainHeight(flat_.xz);
+    vHeight = h;
+    vec4 worldPos = modelMatrix * vec4(position + vec3(0.0, 0.0, h), 1.0);
     vWorldPos = worldPos.xyz;
     gl_Position = projectionMatrix * viewMatrix * worldPos;
   }
@@ -32,6 +42,7 @@ const FLOOR_FRAG = /* glsl */ `
   uniform float uTime;
   varying vec2  vUv;
   varying vec3  vWorldPos;
+  varying float vHeight;
 
   // Cheap 2-D value noise
   float hash(vec2 p) {
@@ -66,6 +77,9 @@ const FLOOR_FRAG = /* glsl */ `
     // Very slight iridescent tint where noise peaks — bioluminescence hint
     col += vec3(0.0, n * n * 0.06, n * n * 0.12);
 
+    // Relief shading: valleys darker, dune crests brighter
+    col *= 0.55 + 0.45 * clamp(vHeight / 6.0, 0.0, 1.0);
+
     gl_FragColor = vec4(col, 1.0);
   }
 `;
@@ -99,8 +113,9 @@ export function Seafloor() {
       rotation={[-Math.PI / 2, 0, 0]}
       material={material}
     >
-      {/* 2000×2000 units — fog hides edges well before they would clip */}
-      <planeGeometry args={[2000, 2000, 1, 1]} />
+      {/* 2000×2000 units — fog hides edges well before they would clip.
+          256² segments (~7.8-unit cells) resolve the finest terrain octave */}
+      <planeGeometry args={[2000, 2000, 256, 256]} />
     </mesh>
   );
 }
