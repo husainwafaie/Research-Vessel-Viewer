@@ -21,6 +21,7 @@ import { SeafloorScatter } from './Underwater/SeafloorScatter';
 import { FishSchools } from './Underwater/FishSchools';
 import { Drifters } from './Underwater/Drifters';
 import { HullCaustics } from './Underwater/HullCaustics';
+import { CameraDrift } from './Underwater/CameraDrift';
 import { CameraDepthWatcher } from './Underwater/CameraDepthWatcher';
 import { vessel } from '@data/vessel';
 import { useSceneStore } from '@store/scene.store';
@@ -123,6 +124,8 @@ export function Scene() {
       {/* Drives caustic shimmer on submerged hull materials (always mounted —
           strength eases to 0 above water) */}
       <HullCaustics />
+      {/* Gentle buoyancy sway on the camera while underwater */}
+      <CameraDrift />
 
       {/* Watches camera Y each frame — auto-switches underwater/surface mode
           and keeps cameraDepth current for the DepthGauge HUD */}
