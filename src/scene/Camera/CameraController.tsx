@@ -21,6 +21,10 @@ import { vessel } from '@data/vessel';
 const LERP_SPEED = 2.5; // units per second feel — higher = snappier transition
 const LERP_EPSILON = 0.001; // stop lerping when this close
 
+// The seafloor plane sits at y = −55 and is front-side only — the camera
+// passing through it would see the floor vanish. Keep orbit and pan above it.
+const FLOOR_CLAMP_Y = -52;
+
 export function CameraController() {
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const { camera } = useThree();
@@ -53,6 +57,15 @@ export function CameraController() {
         : new THREE.Vector3(0, 0, 0),
     );
   }, [cameraTarget, isTransitioning, camera]);
+
+  // Hard floor: orbiting/panning must never carry the view below the seafloor
+  useFrame(() => {
+    if (!isUnderwater || isTransitioning || !controlsRef.current) return;
+    if (camera.position.y < FLOOR_CLAMP_Y) camera.position.y = FLOOR_CLAMP_Y;
+    if (controlsRef.current.target.y < FLOOR_CLAMP_Y) {
+      controlsRef.current.target.y = FLOOR_CLAMP_Y;
+    }
+  });
 
   useFrame((_, delta) => {
     if (!cameraTarget || !isTransitioning || !controlsRef.current) return;
