@@ -2,6 +2,7 @@ import { useMemo, useEffect } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { useSceneStore } from '@store/scene.store';
+import { applyHullCaustics } from '@scene/Underwater/HullCaustics';
 
 const VESSEL_URL = '/models/vessel/scene.gltf';
 
@@ -95,6 +96,8 @@ export function VesselModel() {
           if (override.roughness !== undefined) cloned.roughness = override.roughness;
           if (override.metalness !== undefined) cloned.metalness = override.metalness;
         }
+        // Submerged surfaces receive animated caustic light underwater
+        applyHullCaustics(cloned);
         tunedMaterials.set(src.name, cloned);
       }
       return tunedMaterials.get(src.name)!;
