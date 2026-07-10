@@ -49,6 +49,11 @@ const FISH_VERT_WAG = /* glsl */ `
 
 const WAG_AMP = 0.07; // lateral tail sweep at unit body length
 
+// Camera avoidance: fish within this radius of the viewer are displaced
+// radially outward, so pushing into a school parts it around the camera
+const SCATTER_RADIUS = 8;
+const SCATTER_STRENGTH = 5;
+
 interface SpeciesConfig {
   name: string;
   schoolCount: number;
@@ -336,9 +341,24 @@ function Species({ data }: { data: SpeciesData }) {
         const wy = Math.sin(t * fy + py) * w * 0.4;
         const wz = Math.cos(t * fz + pz) * w;
 
-        const posX = cx + offsets[i3] + wx;
-        const posY = cy + offsets[i3 + 1] + wy;
-        const posZ = cz + offsets[i3 + 2] + wz;
+        let posX = cx + offsets[i3] + wx;
+        let posY = cy + offsets[i3 + 1] + wy;
+        let posZ = cz + offsets[i3 + 2] + wz;
+
+        // Scatter: displacement is a pure function of camera and fish
+        // positions, so the school parts smoothly and re-forms with no
+        // per-fish state as the camera moves through
+        const dxc = posX - camera.position.x;
+        const dyc = posY - camera.position.y;
+        const dzc = posZ - camera.position.z;
+        const dsq = dxc * dxc + dyc * dyc + dzc * dzc;
+        if (dsq < SCATTER_RADIUS * SCATTER_RADIUS && dsq > 1e-4) {
+          const d = Math.sqrt(dsq);
+          const push = (1 - d / SCATTER_RADIUS) * SCATTER_STRENGTH;
+          posX += (dxc / d) * push;
+          posY += (dyc / d) * push * 0.4; // mostly sidestep, not dive/climb
+          posZ += (dzc / d) * push;
+        }
 
         // Velocity = orbit derivative + wander derivative → smooth heading
         const velX = vcx + Math.cos(t * fx + px) * fx * w;
