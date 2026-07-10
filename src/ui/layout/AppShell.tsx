@@ -45,6 +45,8 @@ export function AppShell() {
   const isSubmerged        = useSceneStore((s) => s.isSubmerged);
   const audioMuted         = useUIStore((s) => s.audioMuted);
   const toggleAudioMuted   = useUIStore((s) => s.toggleAudioMuted);
+  const quality            = useUIStore((s) => s.quality);
+  const toggleQuality      = useUIStore((s) => s.toggleQuality);
 
   const isTourActive = activeTour !== null;
 
@@ -110,6 +112,20 @@ export function AppShell() {
               Overview
             </button>
           )}
+
+          {/* Render quality toggle — low halves particle counts and seafloor
+              tessellation for weaker GPUs; persisted to localStorage */}
+          <button
+            onClick={toggleQuality}
+            className="glass rounded-lg px-2.5 py-1.5 text-xs text-ocean-400 hover:text-white transition-colors text-data"
+            aria-label={quality === 'high'
+              ? 'Switch to low render quality'
+              : 'Switch to high render quality'}
+            aria-pressed={quality === 'low'}
+            title="Render quality"
+          >
+            {quality === 'high' ? 'HQ' : 'LQ'}
+          </button>
 
           {/* Ambience mute — only meaningful while submerged, where audio
               plays (covers dive mode AND underwater tour steps) */}

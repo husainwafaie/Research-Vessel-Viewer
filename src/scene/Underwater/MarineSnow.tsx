@@ -2,8 +2,9 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSceneStore } from '@store/scene.store';
+import { useUIStore } from '@store/ui.store';
 
-const COUNT = 700;
+const COUNT = 700; // halved at low render quality
 // Spread radius around the camera in world units
 const SPREAD_XZ = 70;
 const SPREAD_Y  = 40;
@@ -26,15 +27,19 @@ const SPREAD_Y  = 40;
  */
 export function MarineSnow() {
   const isUnderwater = useSceneStore((s) => s.isSubmerged);
+  const quality      = useUIStore((s) => s.quality);
   const pointsRef    = useRef<THREE.Points>(null);
 
-  // Build particle data once. Velocities: y (drift), xz (wobble phase offsets)
-  const { positions, speedY, wobblePhase } = useMemo(() => {
-    const positions    = new Float32Array(COUNT * 3);
-    const speedY       = new Float32Array(COUNT);
-    const wobblePhase  = new Float32Array(COUNT);
+  const count = quality === 'low' ? COUNT / 2 : COUNT;
 
-    for (let i = 0; i < COUNT; i++) {
+  // Build particle data once per quality level.
+  // Velocities: y (drift), xz (wobble phase offsets)
+  const { positions, speedY, wobblePhase } = useMemo(() => {
+    const positions    = new Float32Array(count * 3);
+    const speedY       = new Float32Array(count);
+    const wobblePhase  = new Float32Array(count);
+
+    for (let i = 0; i < count; i++) {
       positions[i * 3]     = (Math.random() - 0.5) * SPREAD_XZ;
       positions[i * 3 + 1] = (Math.random() - 0.5) * SPREAD_Y - 10;
       positions[i * 3 + 2] = (Math.random() - 0.5) * SPREAD_XZ;
@@ -43,7 +48,7 @@ export function MarineSnow() {
     }
 
     return { positions, speedY, wobblePhase };
-  }, []);
+  }, [count]);
 
   useFrame(({ clock, camera }, delta) => {
     if (!pointsRef.current) return;
@@ -53,7 +58,7 @@ export function MarineSnow() {
     const t   = clock.getElapsedTime();
     const cam = camera.position;
 
-    for (let i = 0; i < COUNT; i++) {
+    for (let i = 0; i < count; i++) {
       const idx = i * 3;
 
       // Drift downward
@@ -78,7 +83,8 @@ export function MarineSnow() {
   if (!isUnderwater) return null;
 
   return (
-    <points ref={pointsRef}>
+    // key forces a clean remount when quality changes the buffer sizes
+    <points ref={pointsRef} key={count}>
       <bufferGeometry>
         {/* args=[array, itemSize] — the correct R3F constructor pattern;
             using array/count as JSX props bypasses the constructor and

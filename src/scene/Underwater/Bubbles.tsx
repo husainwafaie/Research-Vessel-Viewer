@@ -2,8 +2,9 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSceneStore } from '@store/scene.store';
+import { useUIStore } from '@store/ui.store';
 
-const COUNT = 320;
+const COUNT = 320; // halved at low render quality
 // Bubbles spawn in a tighter cluster around the hull (vessel is ~64 units long)
 const SPREAD_XZ = 50;
 const SPAWN_Y   = -45; // start below the keel
@@ -22,15 +23,18 @@ const SURFACE_Y =  0.5; // disappear just above the waterline
  */
 export function Bubbles() {
   const isUnderwater = useSceneStore((s) => s.isSubmerged);
+  const quality      = useUIStore((s) => s.quality);
   const pointsRef    = useRef<THREE.Points>(null);
 
-  const { positions, speedY, wobblePhase, wobbleRadius } = useMemo(() => {
-    const positions    = new Float32Array(COUNT * 3);
-    const speedY       = new Float32Array(COUNT);
-    const wobblePhase  = new Float32Array(COUNT);
-    const wobbleRadius = new Float32Array(COUNT);
+  const count = quality === 'low' ? COUNT / 2 : COUNT;
 
-    for (let i = 0; i < COUNT; i++) {
+  const { positions, speedY, wobblePhase, wobbleRadius } = useMemo(() => {
+    const positions    = new Float32Array(count * 3);
+    const speedY       = new Float32Array(count);
+    const wobblePhase  = new Float32Array(count);
+    const wobbleRadius = new Float32Array(count);
+
+    for (let i = 0; i < count; i++) {
       positions[i * 3]     = (Math.random() - 0.5) * SPREAD_XZ;
       positions[i * 3 + 1] = SPAWN_Y + Math.random() * Math.abs(SURFACE_Y - SPAWN_Y);
       positions[i * 3 + 2] = (Math.random() - 0.5) * SPREAD_XZ;
@@ -40,7 +44,7 @@ export function Bubbles() {
     }
 
     return { positions, speedY, wobblePhase, wobbleRadius };
-  }, []);
+  }, [count]);
 
   useFrame(({ clock }, delta) => {
     if (!pointsRef.current) return;
@@ -49,7 +53,7 @@ export function Bubbles() {
       .array as Float32Array;
     const t = clock.getElapsedTime();
 
-    for (let i = 0; i < COUNT; i++) {
+    for (let i = 0; i < count; i++) {
       const idx = i * 3;
 
       // Rise upward
@@ -73,7 +77,8 @@ export function Bubbles() {
   if (!isUnderwater) return null;
 
   return (
-    <points ref={pointsRef}>
+    // key forces a clean remount when quality changes the buffer sizes
+    <points ref={pointsRef} key={count}>
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"

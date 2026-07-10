@@ -2,6 +2,7 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSceneStore } from '@store/scene.store';
+import { useUIStore } from '@store/ui.store';
 import { TERRAIN_GLSL } from './seafloorHeight';
 
 /**
@@ -73,7 +74,12 @@ const FLOOR_FRAG = /* glsl */ `
 
 export function Seafloor() {
   const isUnderwater = useSceneStore((s) => s.isSubmerged);
+  const quality = useUIStore((s) => s.quality);
   const meshRef = useRef<THREE.Mesh>(null);
+
+  // 256² cells (~7.8 units) resolve the finest terrain octave; low quality
+  // halves tessellation, softening dune detail slightly
+  const segments = quality === 'low' ? 128 : 256;
 
   const material = useMemo(
     () =>
@@ -100,9 +106,8 @@ export function Seafloor() {
       rotation={[-Math.PI / 2, 0, 0]}
       material={material}
     >
-      {/* 2000×2000 units — fog hides edges well before they would clip.
-          256² segments (~7.8-unit cells) resolve the finest terrain octave */}
-      <planeGeometry args={[2000, 2000, 256, 256]} />
+      {/* 2000×2000 units — fog hides edges well before they would clip */}
+      <planeGeometry args={[2000, 2000, segments, segments]} />
     </mesh>
   );
 }
