@@ -25,7 +25,8 @@ const LERP_EPSILON = 0.001; // stop lerping when this close
 // The seafloor is front-side only — the camera passing through it would see
 // the floor vanish. Keep orbit and pan above the dune crests, derived from
 // the terrain constants so the clamp tracks any future terrain changes.
-const FLOOR_CLAMP_Y = FLOOR_Y + TERRAIN_MAX + 1.8;
+// Exported so DepthGauge can scale its bar to the true maximum depth.
+export const FLOOR_CLAMP_Y = FLOOR_Y + TERRAIN_MAX + 1.8;
 
 export function CameraController() {
   const controlsRef = useRef<OrbitControlsImpl>(null);

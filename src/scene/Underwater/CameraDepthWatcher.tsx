@@ -40,9 +40,11 @@ import { useSceneStore } from '@store/scene.store';
  *   separate UnderwaterBridge component which did the same job.
  */
 
-const ENTER_Y     = -1.5;   // world Y at which we consider camera submerged
-const EXIT_Y      =  1.0;   // world Y at which we consider camera surfaced
-const DEPTH_SCALE =  2.8;   // multiplier to give more dramatic depth numbers
+const ENTER_Y = -1.5; // world Y at which we consider camera submerged
+const EXIT_Y  =  1.0; // world Y at which we consider camera surfaced
+
+/** Multiplier from world units to displayed metres — shared with DepthGauge. */
+export const DEPTH_SCALE = 2.8;
 
 export function CameraDepthWatcher() {
   useFrame(({ camera }) => {
