@@ -33,7 +33,11 @@ export function TourPanel() {
     <AnimatePresence>
       {activeTour && (() => {
         const step      = activeTour.steps[currentStepIndex];
-        const component = step ? (getComponentById(vessel, step.componentId) ?? null) : null;
+        const component = step?.componentId
+          ? (getComponentById(vessel, step.componentId) ?? null)
+          : null;
+        // Camera steps carry their own heading; component steps use the name
+        const stepHeading = component?.name ?? step?.title ?? null;
         const isFirst   = currentStepIndex === 0;
         const isLast    = currentStepIndex === activeTour.steps.length - 1;
         // Tour is "complete" when it has played through and isPlaying stopped at last step
@@ -117,9 +121,9 @@ export function TourPanel() {
                       exit={{ opacity: 0, y: -6 }}
                       transition={{ duration: 0.25 }}
                     >
-                      {component && (
+                      {stepHeading && (
                         <p className="text-xs text-ocean-400 font-medium mb-1.5 uppercase tracking-wide">
-                          {component.name}
+                          {stepHeading}
                         </p>
                       )}
                       <p className="text-sm text-ocean-100 leading-relaxed">

@@ -45,6 +45,12 @@ interface SceneActions {
   enterUnderwater: () => void;
   /** Return to surface free-look from underwater mode. */
   exitUnderwater: () => void;
+  /**
+   * Fly the camera to an explicit pose without selecting a component —
+   * used by tour camera steps. Camera mode is left alone; the
+   * CameraDepthWatcher flips underwater controls if the pose is submerged.
+   */
+  flyCamera: (camera: CameraTarget) => void;
   /** Called each frame by CameraDepthWatcher to keep depth reading current. */
   setCameraDepth: (depth: number) => void;
   /** Called by CameraDepthWatcher when the camera crosses the waterline. */
@@ -109,6 +115,13 @@ export const useSceneStore = create<SceneState & SceneActions>()(
         cameraTarget: { position: [80, 30, 120], target: [0, 5, 0] },
         isTransitioning: true,
         cameraDepth: 0,
+      }),
+
+    flyCamera: (camera) =>
+      set({
+        cameraTarget: camera,
+        isTransitioning: true,
+        selectedComponentId: null,
       }),
 
     setCameraDepth: (depth) => set({ cameraDepth: depth }),
