@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSceneStore } from '@store/scene.store';
+import { mulberry32 } from '@lib/random';
 import { createFishGeometry } from './fishGeometry';
 
 /**
@@ -117,7 +118,9 @@ const SPECIES: SpeciesConfig[] = [
     bodyAspect: 0.36,
     color: '#4a5248',
     tintJitter: 0.1,
-    yBand: [-48, -36],
+    // Band bottom keeps clearance above dune crests (−48.8, see
+    // seafloorHeight.ts) even at maximum downward bob (±2.0)
+    yBand: [-45, -36],
     orbitX: [30, 45],
     orbitZ: [55, 75],
     orbitPeriod: [180, 260],
@@ -154,17 +157,6 @@ interface SpeciesData {
   scales: Float32Array;      // 1 per fish — body length
   phases: Float32Array;      // 1 per fish — tail-wag phase offset
   tints: Float32Array;       // 1 per fish — lightness jitter (0–1)
-}
-
-/** Deterministic PRNG so layouts survive remounts (mulberry32). */
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 function buildSpeciesData(cfg: SpeciesConfig, seed: number): SpeciesData {
@@ -256,6 +248,16 @@ function Species({ data }: { data: SpeciesData }) {
     mat.customProgramCacheKey = () => `fish-${cfg.name}`;
     return mat;
   }, [cfg.color, cfg.name, cfg.tailFreq]);
+
+  // R3F only calls InstancedMesh.dispose() on unmount, which frees neither
+  // geometry nor material — dispose them explicitly or every dive/surface
+  // cycle leaks their GPU buffers
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+      material.dispose();
+    };
+  }, [geometry, material]);
 
   // Per-fish colour tint via the built-in instanceColor path (set once)
   useEffect(() => {

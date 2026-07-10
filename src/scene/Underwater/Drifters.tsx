@@ -123,7 +123,7 @@ export function Drifters() {
     [],
   );
 
-  useFrame(({ clock, camera, size }, delta) => {
+  useFrame(({ clock, camera, size, gl }, delta) => {
     if (!pointsRef.current) return;
 
     const t = clock.getElapsedTime();
@@ -134,10 +134,13 @@ export function Drifters() {
     const depth = useSceneStore.getState().cameraDepth;
     uniforms.uDepthFade.value = smoothstepJs(20, 35, depth);
 
-    // Point size in pixels for a unit world size at 1 unit distance
+    // Point size in DEVICE pixels for a unit world size at 1 unit distance —
+    // gl_PointSize is in device px, and size.height is CSS px, so scale by
+    // the pixel ratio (three's own PointsMaterial does the same)
     const fov = (camera as THREE.PerspectiveCamera).fov ?? 50;
     uniforms.uPixelScale.value =
-      size.height / (2 * Math.tan(THREE.MathUtils.degToRad(fov) / 2));
+      (size.height * gl.getPixelRatio()) /
+      (2 * Math.tan(THREE.MathUtils.degToRad(fov) / 2));
 
     const arr = pointsRef.current.geometry.attributes.position
       .array as Float32Array;
@@ -157,12 +160,16 @@ export function Drifters() {
       const dz = arr[idx + 2] - cam.z;
       const y = arr[idx + 1];
       if (dx * dx + dz * dz > 45 * 45 || y > BAND_TOP || y < BAND_BOTTOM) {
-        arr[idx] = cam.x + (Math.random() - 0.5) * SPREAD_XZ;
+        // Polar sampling within the wrap radius — a square sample could put
+        // corner respawns beyond 45 units, re-triggering the wrap every frame
+        const ang = Math.random() * Math.PI * 2;
+        const rad = Math.sqrt(Math.random()) * 42;
+        arr[idx] = cam.x + Math.cos(ang) * rad;
         arr[idx + 1] = Math.min(
           BAND_TOP,
           Math.max(BAND_BOTTOM, cam.y + (Math.random() - 0.5) * SPREAD_Y),
         );
-        arr[idx + 2] = cam.z + (Math.random() - 0.5) * SPREAD_XZ;
+        arr[idx + 2] = cam.z + Math.sin(ang) * rad;
       }
     }
 

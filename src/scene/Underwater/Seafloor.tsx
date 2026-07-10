@@ -44,30 +44,17 @@ const FLOOR_FRAG = /* glsl */ `
   varying vec3  vWorldPos;
   varying float vHeight;
 
-  // Cheap 2-D value noise
-  float hash(vec2 p) {
-    p = fract(p * vec2(127.1, 311.7));
-    p += dot(p, p + 19.19);
-    return fract(p.x * p.y);
-  }
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f); // smooth
-    return mix(
-      mix(hash(i),          hash(i + vec2(1,0)), f.x),
-      mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
-      f.y
-    );
-  }
+  // Shared value-noise implementation (terrainHash/terrainNoise) — the same
+  // functions the vertex shader uses for displacement
+  ${TERRAIN_GLSL}
 
   void main() {
     // Slowly scrolling UV — simulates current-driven sediment movement
     vec2 scroll = vUv * 18.0 + vec2(uTime * 0.012, uTime * 0.008);
 
     // Two octaves of noise — coarse ripples + fine sand grain
-    float n = noise(scroll) * 0.65
-            + noise(scroll * 2.8 + vec2(5.2, 1.3)) * 0.35;
+    float n = terrainNoise(scroll) * 0.65
+            + terrainNoise(scroll * 2.8 + vec2(5.2, 1.3)) * 0.35;
 
     // Sandy colour range: dark grey-green to warm tan
     vec3 sand0 = vec3(0.06, 0.10, 0.10); // deep shadow
