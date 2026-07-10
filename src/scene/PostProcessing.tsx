@@ -18,7 +18,7 @@ import { useSceneStore } from '@store/scene.store';
  */
 export function PostProcessing() {
   const isFocused    = useSceneStore((s) => s.cameraMode === 'focused');
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
 
   return (
     <EffectComposer>

@@ -43,7 +43,7 @@ const LERP_SPEED = 3.0;
  */
 export function Atmosphere() {
   const { scene } = useThree();
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
 
   // Working colour objects — mutated each frame to avoid GC pressure
   const workBg  = useRef(new THREE.Color());
@@ -73,8 +73,8 @@ export function Atmosphere() {
     if (!(scene.fog instanceof THREE.FogExp2)) return;
     if (!(scene.background instanceof THREE.Color)) return;
 
-    const { cameraMode, cameraDepth } = useSceneStore.getState();
-    if (cameraMode !== 'underwater') return;
+    const { isSubmerged, cameraDepth } = useSceneStore.getState();
+    if (!isSubmerged) return;
 
     // Normalised depth 0–1 with smooth-step so darkening is fastest near
     // the surface where the colour change is most perceptible

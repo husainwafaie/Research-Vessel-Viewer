@@ -20,10 +20,17 @@ interface SceneState {
   meshRegistry: Map<string, THREE.Mesh>;
   /**
    * Camera depth below the water surface in world units.
-   * Updated each frame by UnderwaterBridge when cameraMode === 'underwater'.
-   * Used by the DepthGauge HUD to display current depth.
+   * Updated each frame by CameraDepthWatcher whenever the camera is
+   * submerged, in any camera mode. Used by the DepthGauge HUD.
    */
   cameraDepth: number;
+  /**
+   * True while the camera is physically below the waterline (with
+   * hysteresis), regardless of cameraMode. All underwater VISUALS gate on
+   * this — cameraMode 'underwater' only governs controls/UI semantics — so
+   * tours and focused components render correctly below the surface too.
+   */
+  isSubmerged: boolean;
 }
 
 interface SceneActions {
@@ -38,8 +45,16 @@ interface SceneActions {
   enterUnderwater: () => void;
   /** Return to surface free-look from underwater mode. */
   exitUnderwater: () => void;
-  /** Called each frame by UnderwaterBridge to keep depth reading current. */
+  /**
+   * Fly the camera to an explicit pose without selecting a component —
+   * used by tour camera steps. Camera mode is left alone; the
+   * CameraDepthWatcher flips underwater controls if the pose is submerged.
+   */
+  flyCamera: (camera: CameraTarget) => void;
+  /** Called each frame by CameraDepthWatcher to keep depth reading current. */
   setCameraDepth: (depth: number) => void;
+  /** Called by CameraDepthWatcher when the camera crosses the waterline. */
+  setSubmerged: (submerged: boolean) => void;
 }
 
 export const useSceneStore = create<SceneState & SceneActions>()(
@@ -51,6 +66,7 @@ export const useSceneStore = create<SceneState & SceneActions>()(
     isTransitioning: false,
     meshRegistry: new Map(),
     cameraDepth: 0,
+    isSubmerged: false,
 
     selectComponent: (id, camera) =>
       set({
@@ -101,6 +117,15 @@ export const useSceneStore = create<SceneState & SceneActions>()(
         cameraDepth: 0,
       }),
 
+    flyCamera: (camera) =>
+      set({
+        cameraTarget: camera,
+        isTransitioning: true,
+        selectedComponentId: null,
+      }),
+
     setCameraDepth: (depth) => set({ cameraDepth: depth }),
+
+    setSubmerged: (submerged) => set({ isSubmerged: submerged }),
   })),
 );

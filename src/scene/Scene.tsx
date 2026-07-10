@@ -46,7 +46,7 @@ export function Scene() {
   const clearSelection = useSceneStore((s) => s.clearSelection);
   const resetCamera    = useSceneStore((s) => s.resetCamera);
   const closePanel     = useUIStore((s) => s.closePanel);
-  const isUnderwater   = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater   = useSceneStore((s) => s.isSubmerged);
 
   function handlePointerMissed() {
     clearSelection();

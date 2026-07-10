@@ -1,4 +1,9 @@
 import { useSceneStore } from '@store/scene.store';
+import { FLOOR_CLAMP_Y } from '@scene/Camera/CameraController';
+import { DEPTH_SCALE } from '@scene/Underwater/CameraDepthWatcher';
+
+// Deepest reachable display depth — the camera clamps just above the dunes
+const MAX_DISPLAY_DEPTH = -FLOOR_CLAMP_Y * DEPTH_SCALE;
 
 /**
  * DepthGauge — HUD overlay shown only in underwater camera mode.
@@ -10,7 +15,7 @@ import { useSceneStore } from '@store/scene.store';
  * Uses a glass card consistent with the rest of the UI language.
  */
 export function DepthGauge() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
   const depth        = useSceneStore((s) => s.cameraDepth);
 
   if (!isUnderwater) return null;
@@ -35,11 +40,12 @@ export function DepthGauge() {
           <span className="text-ocean-400 text-xs">m</span>
         </div>
 
-        {/* Visual depth bar — fills proportionally up to 60 m reference */}
+        {/* Visual depth bar — fills proportionally to the deepest reachable
+            point (the camera's seafloor clamp) */}
         <div className="w-full h-1 rounded-full bg-ocean-900 mt-1 overflow-hidden">
           <div
             className="h-full rounded-full bg-cyan-400 transition-all duration-100"
-            style={{ width: `${Math.min(100, (depth / 60) * 100)}%` }}
+            style={{ width: `${Math.min(100, (depth / MAX_DISPLAY_DEPTH) * 100)}%` }}
           />
         </div>
       </div>

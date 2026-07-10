@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useTourStore } from '@store/tour.store';
+import { useSceneStore } from '@store/scene.store';
+import { useUIStore } from '@store/ui.store';
 import { useComponentFocus } from '@hooks/useComponentFocus';
 
 /**
@@ -32,6 +34,8 @@ export function TourDriver() {
   const nextStep         = useTourStore((s) => s.nextStep);
 
   const { focus, blur } = useComponentFocus();
+  const flyCamera  = useSceneStore((s) => s.flyCamera);
+  const closePanel = useUIStore((s) => s.closePanel);
 
   // Both refs are read and written exclusively inside useFrame, keeping the
   // reset tightly coupled to the animation loop.
@@ -39,12 +43,20 @@ export function TourDriver() {
   const lastSeenStepRef = useRef(-1);
 
   // ── Focus camera when step changes ──────────────────────────────────────────
+  // Component steps focus + open the info panel; camera steps fly to an
+  // explicit pose with no selection (underwater tours use these — the
+  // CameraDepthWatcher flips underwater visuals/controls as the camera dives)
   useEffect(() => {
     if (!activeTour) return;
     const step = activeTour.steps[currentStepIndex];
     if (!step) return;
-    focus(step.componentId);
-  }, [activeTour, currentStepIndex, focus]);
+    if (step.componentId) {
+      focus(step.componentId);
+    } else if (step.camera) {
+      closePanel();
+      flyCamera(step.camera);
+    }
+  }, [activeTour, currentStepIndex, focus, flyCamera, closePanel]);
 
   // ── Return camera to overview when tour ends ─────────────────────────────────
   useEffect(() => {
@@ -69,7 +81,10 @@ export function TourDriver() {
       return; // skip this tick's accumulation; begin fresh next frame
     }
 
-    elapsedMsRef.current += delta * 1000;
+    // Clamp the per-frame contribution: asset-decode hitches and background
+    // tabs can produce multi-second deltas, which would otherwise be
+    // credited as dwell time and blast through steps right after page load
+    elapsedMsRef.current += Math.min(delta, 0.1) * 1000;
 
     if (elapsedMsRef.current >= step.dwellMs) {
       elapsedMsRef.current = 0;

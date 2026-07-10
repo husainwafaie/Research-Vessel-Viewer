@@ -100,7 +100,16 @@ export interface Vessel {
 // ─── Tour ─────────────────────────────────────────────────────────────────────
 
 export interface TourStep {
-  componentId: string;
+  /** Focus a vessel component and open its info panel (surface tours). */
+  componentId?: string;
+  /**
+   * Or fly the camera to an explicit pose without selecting anything —
+   * used by underwater/free-space tours. Exactly one of componentId or
+   * camera should be set per step.
+   */
+  camera?: CameraTarget;
+  /** Heading shown in the tour panel for camera steps (components show their name). */
+  title?: string;
   narration: string;
   dwellMs: number;
 }

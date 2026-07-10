@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSceneStore } from '@store/scene.store';
+import { mulberry32 } from '@lib/random';
 import { createFishGeometry } from './fishGeometry';
 
 /**
@@ -47,6 +48,11 @@ const FISH_VERT_WAG = /* glsl */ `
 `;
 
 const WAG_AMP = 0.07; // lateral tail sweep at unit body length
+
+// Camera avoidance: fish within this radius of the viewer are displaced
+// radially outward, so pushing into a school parts it around the camera
+const SCATTER_RADIUS = 8;
+const SCATTER_STRENGTH = 5;
 
 interface SpeciesConfig {
   name: string;
@@ -117,7 +123,9 @@ const SPECIES: SpeciesConfig[] = [
     bodyAspect: 0.36,
     color: '#4a5248',
     tintJitter: 0.1,
-    yBand: [-48, -36],
+    // Band bottom keeps clearance above dune crests (−48.8, see
+    // seafloorHeight.ts) even at maximum downward bob (±2.0)
+    yBand: [-45, -36],
     orbitX: [30, 45],
     orbitZ: [55, 75],
     orbitPeriod: [180, 260],
@@ -154,17 +162,6 @@ interface SpeciesData {
   scales: Float32Array;      // 1 per fish — body length
   phases: Float32Array;      // 1 per fish — tail-wag phase offset
   tints: Float32Array;       // 1 per fish — lightness jitter (0–1)
-}
-
-/** Deterministic PRNG so layouts survive remounts (mulberry32). */
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 function buildSpeciesData(cfg: SpeciesConfig, seed: number): SpeciesData {
@@ -257,6 +254,16 @@ function Species({ data }: { data: SpeciesData }) {
     return mat;
   }, [cfg.color, cfg.name, cfg.tailFreq]);
 
+  // R3F only calls InstancedMesh.dispose() on unmount, which frees neither
+  // geometry nor material — dispose them explicitly or every dive/surface
+  // cycle leaks their GPU buffers
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+      material.dispose();
+    };
+  }, [geometry, material]);
+
   // Per-fish colour tint via the built-in instanceColor path (set once)
   useEffect(() => {
     const mesh = meshRef.current;
@@ -334,9 +341,24 @@ function Species({ data }: { data: SpeciesData }) {
         const wy = Math.sin(t * fy + py) * w * 0.4;
         const wz = Math.cos(t * fz + pz) * w;
 
-        const posX = cx + offsets[i3] + wx;
-        const posY = cy + offsets[i3 + 1] + wy;
-        const posZ = cz + offsets[i3 + 2] + wz;
+        let posX = cx + offsets[i3] + wx;
+        let posY = cy + offsets[i3 + 1] + wy;
+        let posZ = cz + offsets[i3 + 2] + wz;
+
+        // Scatter: displacement is a pure function of camera and fish
+        // positions, so the school parts smoothly and re-forms with no
+        // per-fish state as the camera moves through
+        const dxc = posX - camera.position.x;
+        const dyc = posY - camera.position.y;
+        const dzc = posZ - camera.position.z;
+        const dsq = dxc * dxc + dyc * dyc + dzc * dzc;
+        if (dsq < SCATTER_RADIUS * SCATTER_RADIUS && dsq > 1e-4) {
+          const d = Math.sqrt(dsq);
+          const push = (1 - d / SCATTER_RADIUS) * SCATTER_STRENGTH;
+          posX += (dxc / d) * push;
+          posY += (dyc / d) * push * 0.4; // mostly sidestep, not dive/climb
+          posZ += (dzc / d) * push;
+        }
 
         // Velocity = orbit derivative + wander derivative → smooth heading
         const velX = vcx + Math.cos(t * fx + px) * fx * w;
@@ -368,7 +390,7 @@ function Species({ data }: { data: SpeciesData }) {
 }
 
 export function FishSchools() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
   if (!isUnderwater) return null;
 
   return (

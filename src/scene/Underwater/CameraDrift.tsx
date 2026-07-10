@@ -35,8 +35,8 @@ export function CameraDrift() {
 
   // Post-controls: ease strength toward its target and apply fresh drift
   useFrame(({ camera, clock }, delta) => {
-    const { cameraMode, isTransitioning } = useSceneStore.getState();
-    const target = cameraMode === 'underwater' && !isTransitioning ? 1 : 0;
+    const { isSubmerged, isTransitioning } = useSceneStore.getState();
+    const target = isSubmerged && !isTransitioning ? 1 : 0;
     strength.current +=
       (target - strength.current) * Math.min(1, EASE_SPEED * delta);
 

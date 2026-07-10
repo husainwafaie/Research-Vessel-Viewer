@@ -2,6 +2,7 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSceneStore } from '@store/scene.store';
+import { useUIStore } from '@store/ui.store';
 import { TERRAIN_GLSL } from './seafloorHeight';
 
 /**
@@ -44,30 +45,17 @@ const FLOOR_FRAG = /* glsl */ `
   varying vec3  vWorldPos;
   varying float vHeight;
 
-  // Cheap 2-D value noise
-  float hash(vec2 p) {
-    p = fract(p * vec2(127.1, 311.7));
-    p += dot(p, p + 19.19);
-    return fract(p.x * p.y);
-  }
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f); // smooth
-    return mix(
-      mix(hash(i),          hash(i + vec2(1,0)), f.x),
-      mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
-      f.y
-    );
-  }
+  // Shared value-noise implementation (terrainHash/terrainNoise) — the same
+  // functions the vertex shader uses for displacement
+  ${TERRAIN_GLSL}
 
   void main() {
     // Slowly scrolling UV — simulates current-driven sediment movement
     vec2 scroll = vUv * 18.0 + vec2(uTime * 0.012, uTime * 0.008);
 
     // Two octaves of noise — coarse ripples + fine sand grain
-    float n = noise(scroll) * 0.65
-            + noise(scroll * 2.8 + vec2(5.2, 1.3)) * 0.35;
+    float n = terrainNoise(scroll) * 0.65
+            + terrainNoise(scroll * 2.8 + vec2(5.2, 1.3)) * 0.35;
 
     // Sandy colour range: dark grey-green to warm tan
     vec3 sand0 = vec3(0.06, 0.10, 0.10); // deep shadow
@@ -85,8 +73,13 @@ const FLOOR_FRAG = /* glsl */ `
 `;
 
 export function Seafloor() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
+  const quality = useUIStore((s) => s.quality);
   const meshRef = useRef<THREE.Mesh>(null);
+
+  // 256² cells (~7.8 units) resolve the finest terrain octave; low quality
+  // halves tessellation, softening dune detail slightly
+  const segments = quality === 'low' ? 128 : 256;
 
   const material = useMemo(
     () =>
@@ -113,9 +106,8 @@ export function Seafloor() {
       rotation={[-Math.PI / 2, 0, 0]}
       material={material}
     >
-      {/* 2000×2000 units — fog hides edges well before they would clip.
-          256² segments (~7.8-unit cells) resolve the finest terrain octave */}
-      <planeGeometry args={[2000, 2000, 256, 256]} />
+      {/* 2000×2000 units — fog hides edges well before they would clip */}
+      <planeGeometry args={[2000, 2000, segments, segments]} />
     </mesh>
   );
 }

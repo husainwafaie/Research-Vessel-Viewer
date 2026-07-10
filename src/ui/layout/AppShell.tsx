@@ -6,7 +6,7 @@ import { useUIStore } from '@store/ui.store';
 import { useComponentFocus } from '@hooks/useComponentFocus';
 import { useKeyboardShortcuts } from '@hooks/useKeyboardShortcuts';
 import { useUnderwaterAudio } from '@hooks/useUnderwaterAudio';
-import { allTours } from '@data/tours';
+import { oceanMappingTour, beneathTheHullTour } from '@data/tours';
 import { useTourStore } from '@store/tour.store';
 import { useSceneStore } from '@store/scene.store';
 
@@ -42,8 +42,11 @@ export function AppShell() {
   const enterUnderwater    = useSceneStore((s) => s.enterUnderwater);
   const exitUnderwater     = useSceneStore((s) => s.exitUnderwater);
   const isUnderwater       = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isSubmerged        = useSceneStore((s) => s.isSubmerged);
   const audioMuted         = useUIStore((s) => s.audioMuted);
   const toggleAudioMuted   = useUIStore((s) => s.toggleAudioMuted);
+  const quality            = useUIStore((s) => s.quality);
+  const toggleQuality      = useUIStore((s) => s.toggleQuality);
 
   const isTourActive = activeTour !== null;
 
@@ -110,8 +113,23 @@ export function AppShell() {
             </button>
           )}
 
-          {/* Ambience mute — only meaningful underwater, where audio plays */}
-          {isUnderwater && (
+          {/* Render quality toggle — low halves particle counts and seafloor
+              tessellation for weaker GPUs; persisted to localStorage */}
+          <button
+            onClick={toggleQuality}
+            className="glass rounded-lg px-2.5 py-1.5 text-xs text-ocean-400 hover:text-white transition-colors text-data"
+            aria-label={quality === 'high'
+              ? 'Switch to low render quality'
+              : 'Switch to high render quality'}
+            aria-pressed={quality === 'low'}
+            title="Render quality"
+          >
+            {quality === 'high' ? 'HQ' : 'LQ'}
+          </button>
+
+          {/* Ambience mute — only meaningful while submerged, where audio
+              plays (covers dive mode AND underwater tour steps) */}
+          {isSubmerged && (
             <button
               onClick={toggleAudioMuted}
               className="glass rounded-lg px-2.5 py-1.5 text-xs text-ocean-300 hover:text-white transition-colors flex items-center"
@@ -163,18 +181,32 @@ export function AppShell() {
             )
           )}
 
-          {/* Tour launcher — hidden while tour is running or underwater */}
+          {/* Tour launchers — hidden while tour is running or underwater */}
           {!isTourActive && !isUnderwater && (
-            <button
-              onClick={() => startTour(allTours[0])}
-              className="glass rounded-lg px-3 py-1.5 text-xs text-ocean-300 hover:text-white transition-colors flex items-center gap-1.5"
-              aria-label="Start guided tour"
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <polygon points="3,1 11,6 3,11" fill="currentColor" />
-              </svg>
-              Guided Tour
-            </button>
+            <>
+              <button
+                onClick={() => startTour(oceanMappingTour)}
+                className="glass rounded-lg px-3 py-1.5 text-xs text-ocean-300 hover:text-white transition-colors flex items-center gap-1.5"
+                aria-label="Start guided tour"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <polygon points="3,1 11,6 3,11" fill="currentColor" />
+                </svg>
+                Guided Tour
+              </button>
+              <button
+                onClick={() => startTour(beneathTheHullTour)}
+                className="glass rounded-lg px-3 py-1.5 text-xs text-cyan-300 hover:text-white transition-colors flex items-center gap-1.5"
+                aria-label="Start underwater tour — beneath the hull"
+              >
+                {/* Waves icon */}
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M1 4c1.5-1.5 3-1.5 4.5 0S9 5.5 11 4M1 8c1.5-1.5 3-1.5 4.5 0S9 9.5 11 8"
+                        stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                </svg>
+                Dive Tour
+              </button>
+            </>
           )}
         </div>
       </header>

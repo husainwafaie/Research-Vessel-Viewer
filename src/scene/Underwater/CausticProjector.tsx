@@ -119,7 +119,7 @@ function CausticPlane({
 }
 
 export function CausticProjector() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
   if (!isUnderwater) return null;
 
   return (

@@ -4,6 +4,7 @@ import { OrbitControls } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { useSceneStore } from '@store/scene.store';
+import { FLOOR_Y, TERRAIN_MAX } from '@scene/Underwater/seafloorHeight';
 import { vessel } from '@data/vessel';
 
 /**
@@ -21,10 +22,11 @@ import { vessel } from '@data/vessel';
 const LERP_SPEED = 2.5; // units per second feel — higher = snappier transition
 const LERP_EPSILON = 0.001; // stop lerping when this close
 
-// The seafloor base plane sits at y = −55 with dunes rising ~6 units above
-// it (see seafloorHeight.ts), and is front-side only — the camera passing
-// through it would see the floor vanish. Keep orbit and pan above the crests.
-const FLOOR_CLAMP_Y = -47;
+// The seafloor is front-side only — the camera passing through it would see
+// the floor vanish. Keep orbit and pan above the dune crests, derived from
+// the terrain constants so the clamp tracks any future terrain changes.
+// Exported so DepthGauge can scale its bar to the true maximum depth.
+export const FLOOR_CLAMP_Y = FLOOR_Y + TERRAIN_MAX + 1.8;
 
 export function CameraController() {
   const controlsRef = useRef<OrbitControlsImpl>(null);

@@ -2,8 +2,9 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSceneStore } from '@store/scene.store';
+import { useUIStore } from '@store/ui.store';
 
-const COUNT = 220;
+const COUNT = 220; // halved at low render quality
 // Spawn envelope around the camera in world units
 const SPREAD_XZ = 70;
 const SPREAD_Y = 40;
@@ -83,20 +84,23 @@ function smoothstepJs(edge0: number, edge1: number, x: number): number {
 }
 
 export function Drifters() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
+  const quality = useUIStore((s) => s.quality);
   const pointsRef = useRef<THREE.Points>(null);
+
+  const count = quality === 'low' ? COUNT / 2 : COUNT;
 
   // Per-particle buffers: position + phase/size/colour-mix attributes,
   // plus CPU-side drift velocities
   const { positions, phases, sizes, mixes, velY, wobblePhase } = useMemo(() => {
-    const positions = new Float32Array(COUNT * 3);
-    const phases = new Float32Array(COUNT);
-    const sizes = new Float32Array(COUNT);
-    const mixes = new Float32Array(COUNT);
-    const velY = new Float32Array(COUNT);
-    const wobblePhase = new Float32Array(COUNT);
+    const positions = new Float32Array(count * 3);
+    const phases = new Float32Array(count);
+    const sizes = new Float32Array(count);
+    const mixes = new Float32Array(count);
+    const velY = new Float32Array(count);
+    const wobblePhase = new Float32Array(count);
 
-    for (let i = 0; i < COUNT; i++) {
+    for (let i = 0; i < count; i++) {
       positions[i * 3] = (Math.random() - 0.5) * SPREAD_XZ;
       positions[i * 3 + 1] =
         BAND_TOP - Math.random() * (BAND_TOP - BAND_BOTTOM);
@@ -112,7 +116,7 @@ export function Drifters() {
     }
 
     return { positions, phases, sizes, mixes, velY, wobblePhase };
-  }, []);
+  }, [count]);
 
   const uniforms = useMemo(
     () => ({
@@ -123,7 +127,7 @@ export function Drifters() {
     [],
   );
 
-  useFrame(({ clock, camera, size }, delta) => {
+  useFrame(({ clock, camera, size, gl }, delta) => {
     if (!pointsRef.current) return;
 
     const t = clock.getElapsedTime();
@@ -134,16 +138,19 @@ export function Drifters() {
     const depth = useSceneStore.getState().cameraDepth;
     uniforms.uDepthFade.value = smoothstepJs(20, 35, depth);
 
-    // Point size in pixels for a unit world size at 1 unit distance
+    // Point size in DEVICE pixels for a unit world size at 1 unit distance —
+    // gl_PointSize is in device px, and size.height is CSS px, so scale by
+    // the pixel ratio (three's own PointsMaterial does the same)
     const fov = (camera as THREE.PerspectiveCamera).fov ?? 50;
     uniforms.uPixelScale.value =
-      size.height / (2 * Math.tan(THREE.MathUtils.degToRad(fov) / 2));
+      (size.height * gl.getPixelRatio()) /
+      (2 * Math.tan(THREE.MathUtils.degToRad(fov) / 2));
 
     const arr = pointsRef.current.geometry.attributes.position
       .array as Float32Array;
     const cam = camera.position;
 
-    for (let i = 0; i < COUNT; i++) {
+    for (let i = 0; i < count; i++) {
       const idx = i * 3;
 
       // Slow vertical drift + micro-current wobble
@@ -157,12 +164,16 @@ export function Drifters() {
       const dz = arr[idx + 2] - cam.z;
       const y = arr[idx + 1];
       if (dx * dx + dz * dz > 45 * 45 || y > BAND_TOP || y < BAND_BOTTOM) {
-        arr[idx] = cam.x + (Math.random() - 0.5) * SPREAD_XZ;
+        // Polar sampling within the wrap radius — a square sample could put
+        // corner respawns beyond 45 units, re-triggering the wrap every frame
+        const ang = Math.random() * Math.PI * 2;
+        const rad = Math.sqrt(Math.random()) * 42;
+        arr[idx] = cam.x + Math.cos(ang) * rad;
         arr[idx + 1] = Math.min(
           BAND_TOP,
           Math.max(BAND_BOTTOM, cam.y + (Math.random() - 0.5) * SPREAD_Y),
         );
-        arr[idx + 2] = cam.z + (Math.random() - 0.5) * SPREAD_XZ;
+        arr[idx + 2] = cam.z + Math.sin(ang) * rad;
       }
     }
 
@@ -173,8 +184,9 @@ export function Drifters() {
 
   return (
     // Positions recentre around the camera over time, so the static
-    // bounding sphere would mis-cull — disable frustum culling
-    <points ref={pointsRef} frustumCulled={false}>
+    // bounding sphere would mis-cull — disable frustum culling.
+    // key forces a clean remount when quality changes the buffer sizes.
+    <points ref={pointsRef} frustumCulled={false} key={count}>
       <bufferGeometry>
         {/* args=[array, itemSize] — constructor pattern (see MarineSnow) */}
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />

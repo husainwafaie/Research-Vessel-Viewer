@@ -3,6 +3,20 @@ import { subscribeWithSelector } from 'zustand/middleware';
 
 export type ActivePanel = 'component' | 'systems' | 'tour' | null;
 
+export type RenderQuality = 'high' | 'low';
+
+const QUALITY_STORAGE_KEY = 'rvv-quality';
+
+// Read once at module init; localStorage can throw in private/locked-down
+// browsing modes, so failures just fall back to high
+function loadStoredQuality(): RenderQuality {
+  try {
+    return localStorage.getItem(QUALITY_STORAGE_KEY) === 'low' ? 'low' : 'high';
+  } catch {
+    return 'high';
+  }
+}
+
 interface UIState {
   activePanel: ActivePanel;
   sidebarExpanded: boolean;
@@ -10,6 +24,8 @@ interface UIState {
   loadingProgress: number;
   /** Underwater ambience mute (audio only plays underwater). */
   audioMuted: boolean;
+  /** Render quality — 'low' halves particle counts and seafloor tessellation. */
+  quality: RenderQuality;
 }
 
 interface UIActions {
@@ -20,6 +36,7 @@ interface UIActions {
   setLoading: (loading: boolean) => void;
   setLoadingProgress: (progress: number) => void;
   toggleAudioMuted: () => void;
+  toggleQuality: () => void;
 }
 
 // subscribeWithSelector: useUnderwaterAudio subscribes to audioMuted without
@@ -31,6 +48,7 @@ export const useUIStore = create<UIState & UIActions>()(
   isLoading: true,
   loadingProgress: 0,
   audioMuted: false,
+  quality: loadStoredQuality(),
 
   openPanel: (panel) => set({ activePanel: panel }),
 
@@ -45,5 +63,16 @@ export const useUIStore = create<UIState & UIActions>()(
   setLoadingProgress: (progress) => set({ loadingProgress: progress }),
 
   toggleAudioMuted: () => set((s) => ({ audioMuted: !s.audioMuted })),
+
+  toggleQuality: () =>
+    set((s) => {
+      const quality: RenderQuality = s.quality === 'high' ? 'low' : 'high';
+      try {
+        localStorage.setItem(QUALITY_STORAGE_KEY, quality);
+      } catch {
+        /* private mode — preference just won't persist */
+      }
+      return { quality };
+    }),
   })),
 );
