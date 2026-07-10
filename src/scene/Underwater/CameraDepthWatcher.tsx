@@ -47,29 +47,40 @@ const DEPTH_SCALE =  2.8;   // multiplier to give more dramatic depth numbers
 export function CameraDepthWatcher() {
   useFrame(({ camera }) => {
     const store = useSceneStore.getState();
-    const { cameraMode, isTransitioning, setCameraMode, setCameraDepth } = store;
     const y = camera.position.y;
 
+    // ── Visual submersion — tracked in EVERY mode (tours and focused
+    // components included) and even mid-transition, so the underwater
+    // visuals always follow the camera's actual position.
+    if (!store.isSubmerged && y < ENTER_Y) {
+      store.setSubmerged(true);
+    } else if (store.isSubmerged && y > EXIT_Y) {
+      store.setSubmerged(false);
+    }
+
+    // ── Depth readout whenever below the surface
+    if (store.isSubmerged) {
+      const depth = Math.round(Math.max(0, -y) * DEPTH_SCALE * 10) / 10;
+      if (depth !== store.cameraDepth) store.setCameraDepth(depth);
+    } else if (store.cameraDepth !== 0) {
+      store.setCameraDepth(0);
+    }
+
+    // ── Mode auto-toggle (controls/UI semantics only) ──────────────────
     // Let button-triggered transitions own the mode for their full duration.
     // Without this, the watcher immediately undoes enterUnderwater() because
     // the camera starts above EXIT_Y while cameraMode is already 'underwater'.
-    if (isTransitioning) return;
+    if (store.isTransitioning) return;
 
     // Don't interfere with tour or focused-component camera ownership
-    if (cameraMode === 'tour' || cameraMode === 'focused') return;
+    if (store.cameraMode === 'tour' || store.cameraMode === 'focused') return;
 
-    if (cameraMode !== 'underwater' && y < ENTER_Y) {
-      // Camera crossed below the surface — activate underwater effects
-      setCameraMode('underwater');
-    } else if (cameraMode === 'underwater' && y > EXIT_Y) {
-      // Camera returned above the surface — restore surface effects
-      setCameraMode('free');
-      setCameraDepth(0);
-    }
-
-    // Keep depth gauge current while submerged
-    if (cameraMode === 'underwater') {
-      setCameraDepth(Math.round(Math.max(0, -y) * DEPTH_SCALE * 10) / 10);
+    if (store.cameraMode !== 'underwater' && y < ENTER_Y) {
+      // Camera crossed below the surface — switch to underwater controls
+      store.setCameraMode('underwater');
+    } else if (store.cameraMode === 'underwater' && y > EXIT_Y) {
+      // Camera returned above the surface — restore surface controls
+      store.setCameraMode('free');
     }
   });
 

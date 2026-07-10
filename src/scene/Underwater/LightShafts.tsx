@@ -101,7 +101,7 @@ function Shaft({ cfg }: { cfg: ShaftConfig }) {
 }
 
 export function LightShafts() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
   if (!isUnderwater) return null;
 
   return (

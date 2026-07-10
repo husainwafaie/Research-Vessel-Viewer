@@ -42,6 +42,7 @@ export function AppShell() {
   const enterUnderwater    = useSceneStore((s) => s.enterUnderwater);
   const exitUnderwater     = useSceneStore((s) => s.exitUnderwater);
   const isUnderwater       = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isSubmerged        = useSceneStore((s) => s.isSubmerged);
   const audioMuted         = useUIStore((s) => s.audioMuted);
   const toggleAudioMuted   = useUIStore((s) => s.toggleAudioMuted);
 
@@ -110,8 +111,9 @@ export function AppShell() {
             </button>
           )}
 
-          {/* Ambience mute — only meaningful underwater, where audio plays */}
-          {isUnderwater && (
+          {/* Ambience mute — only meaningful while submerged, where audio
+              plays (covers dive mode AND underwater tour steps) */}
+          {isSubmerged && (
             <button
               onClick={toggleAudioMuted}
               className="glass rounded-lg px-2.5 py-1.5 text-xs text-ocean-300 hover:text-white transition-colors flex items-center"

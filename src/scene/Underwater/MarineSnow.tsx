@@ -25,7 +25,7 @@ const SPREAD_Y  = 40;
  *   - Only runs updateFrame / is mounted when cameraMode === 'underwater'
  */
 export function MarineSnow() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
   const pointsRef    = useRef<THREE.Points>(null);
 
   // Build particle data once. Velocities: y (drift), xz (wobble phase offsets)

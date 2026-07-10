@@ -23,7 +23,7 @@ const RADIUS_MAX = 260;
  */
 
 export function SeafloorScatter() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
   const meshRef = useRef<THREE.InstancedMesh>(null);
 
   const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, 1), []);

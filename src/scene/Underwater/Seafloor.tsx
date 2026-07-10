@@ -72,7 +72,7 @@ const FLOOR_FRAG = /* glsl */ `
 `;
 
 export function Seafloor() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
   const meshRef = useRef<THREE.Mesh>(null);
 
   const material = useMemo(

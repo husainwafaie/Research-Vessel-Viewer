@@ -83,7 +83,7 @@ function smoothstepJs(edge0: number, edge1: number, x: number): number {
 }
 
 export function Drifters() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
   const pointsRef = useRef<THREE.Points>(null);
 
   // Per-particle buffers: position + phase/size/colour-mix attributes,

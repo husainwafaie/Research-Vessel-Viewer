@@ -370,7 +370,7 @@ function Species({ data }: { data: SpeciesData }) {
 }
 
 export function FishSchools() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
   if (!isUnderwater) return null;
 
   return (

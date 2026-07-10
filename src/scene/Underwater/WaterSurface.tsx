@@ -16,7 +16,7 @@ import { useSceneStore } from '@store/scene.store';
  * Only mounted in underwater mode.
  */
 export function WaterSurface() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
   const meshRef = useRef<THREE.Mesh>(null);
 
   const material = useMemo(

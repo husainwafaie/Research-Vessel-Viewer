@@ -21,7 +21,7 @@ const SURFACE_Y =  0.5; // disappear just above the waterline
  * marine snow to read clearly against the dark background.
  */
 export function Bubbles() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
   const pointsRef    = useRef<THREE.Points>(null);
 
   const { positions, speedY, wobblePhase, wobbleRadius } = useMemo(() => {

@@ -118,10 +118,7 @@ export function applyHullCaustics(material: THREE.MeshStandardMaterial): void {
 export function HullCaustics() {
   useFrame(({ clock }, delta) => {
     HULL_UNIFORMS.uTime.value = clock.getElapsedTime();
-    const target =
-      useSceneStore.getState().cameraMode === 'underwater'
-        ? STRENGTH_TARGET
-        : 0;
+    const target = useSceneStore.getState().isSubmerged ? STRENGTH_TARGET : 0;
     const current = HULL_UNIFORMS.uCausticStrength.value;
     HULL_UNIFORMS.uCausticStrength.value +=
       (target - current) * Math.min(1, LERP_SPEED * delta);

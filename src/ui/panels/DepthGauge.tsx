@@ -10,7 +10,7 @@ import { useSceneStore } from '@store/scene.store';
  * Uses a glass card consistent with the rest of the UI language.
  */
 export function DepthGauge() {
-  const isUnderwater = useSceneStore((s) => s.cameraMode === 'underwater');
+  const isUnderwater = useSceneStore((s) => s.isSubmerged);
   const depth        = useSceneStore((s) => s.cameraDepth);
 
   if (!isUnderwater) return null;

@@ -21,23 +21,33 @@ import { underwaterAudio } from '@lib/underwaterAudio';
  */
 export function useUnderwaterAudio(): void {
   useEffect(() => {
-    const levelFor = (mode: string, depth: number): number =>
-      mode === 'underwater' ? 0.4 + 0.6 * Math.min(1, depth / 60) : 0;
+    const levelFor = (submerged: boolean, depth: number): number =>
+      submerged ? 0.4 + 0.6 * Math.min(1, depth / 60) : 0;
 
+    // Mode flips synchronously inside the Dive button click — the one place
+    // we can create the AudioContext within a user gesture
     const unsubMode = useSceneStore.subscribe(
       (s) => s.cameraMode,
       (mode) => {
         if (mode === 'underwater') underwaterAudio.ensureStarted();
+      },
+    );
+
+    // Ambience follows actual submersion (any mode — tours included)
+    const unsubSubmerged = useSceneStore.subscribe(
+      (s) => s.isSubmerged,
+      (submerged) => {
+        if (submerged) underwaterAudio.ensureStarted();
         const { cameraDepth } = useSceneStore.getState();
-        underwaterAudio.setLevel(levelFor(mode, cameraDepth));
+        underwaterAudio.setLevel(levelFor(submerged, cameraDepth));
       },
     );
 
     const unsubDepth = useSceneStore.subscribe(
       (s) => s.cameraDepth,
       (depth) => {
-        const { cameraMode } = useSceneStore.getState();
-        underwaterAudio.setLevel(levelFor(cameraMode, depth));
+        const { isSubmerged } = useSceneStore.getState();
+        underwaterAudio.setLevel(levelFor(isSubmerged, depth));
       },
     );
 
@@ -53,6 +63,7 @@ export function useUnderwaterAudio(): void {
 
     return () => {
       unsubMode();
+      unsubSubmerged();
       unsubDepth();
       unsubMuted();
       window.removeEventListener('pointerdown', resume);
