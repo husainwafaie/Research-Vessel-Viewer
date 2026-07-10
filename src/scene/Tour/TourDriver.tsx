@@ -81,7 +81,10 @@ export function TourDriver() {
       return; // skip this tick's accumulation; begin fresh next frame
     }
 
-    elapsedMsRef.current += delta * 1000;
+    // Clamp the per-frame contribution: asset-decode hitches and background
+    // tabs can produce multi-second deltas, which would otherwise be
+    // credited as dwell time and blast through steps right after page load
+    elapsedMsRef.current += Math.min(delta, 0.1) * 1000;
 
     if (elapsedMsRef.current >= step.dwellMs) {
       elapsedMsRef.current = 0;
