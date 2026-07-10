@@ -18,10 +18,15 @@ import { useSceneStore } from '@store/scene.store';
 
 const SHAFT_VERT = /* glsl */ `
   varying float vFade;
+  varying vec3  vNormalW;
+  varying vec3  vViewDirW;
   void main() {
     // position.y in local space goes from +0.5 (top) to -0.5 (bottom).
     // We want: top (y = 0.5 in model) = opaque, bottom = transparent.
     vFade = clamp(position.y + 0.5, 0.0, 1.0);
+    vNormalW  = normalize(mat3(modelMatrix) * normal);
+    vec3 worldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+    vViewDirW = normalize(cameraPosition - worldPos);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
@@ -30,8 +35,15 @@ const SHAFT_FRAG = /* glsl */ `
   uniform float uOpacity;
   uniform vec3  uColor;
   varying float vFade;
+  varying vec3  vNormalW;
+  varying vec3  vViewDirW;
   void main() {
-    gl_FragColor = vec4(uColor, uOpacity * vFade);
+    // Volumetric read: a view ray through the middle of the shaft crosses
+    // the most water (surface normal faces the camera there), a ray at the
+    // silhouette edge crosses none (normal ⊥ view) — so |n·v| approximates
+    // path length and gives the soft centre-bright falloff of a real ray.
+    float thickness = abs(dot(normalize(vNormalW), normalize(vViewDirW)));
+    gl_FragColor = vec4(uColor, uOpacity * vFade * thickness);
   }
 `;
 
@@ -81,7 +93,15 @@ function Shaft({ cfg }: { cfg: ShaftConfig }) {
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     const pulse = 0.5 + 0.5 * Math.sin(t * cfg.pulseSpeed + cfg.pulsePhase);
-    material.uniforms.uOpacity.value = cfg.baseOpacity * (0.6 + 0.4 * pulse);
+    // ×1.6 compensates the energy the centre-bright falloff removes
+    material.uniforms.uOpacity.value = cfg.baseOpacity * 1.6 * (0.6 + 0.4 * pulse);
+
+    // Slow sway — surface waves steer the refracted column over time
+    const mesh = meshRef.current;
+    if (mesh) {
+      mesh.rotation.x = cfg.tiltX + Math.sin(t * 0.10 + cfg.pulsePhase) * 0.025;
+      mesh.rotation.z = cfg.tiltZ + Math.cos(t * 0.08 + cfg.pulsePhase * 1.7) * 0.025;
+    }
   });
 
   // Cylinder top sits at y=0 (surface); centre is half-height below
@@ -94,8 +114,9 @@ function Shaft({ cfg }: { cfg: ShaftConfig }) {
       rotation={[cfg.tiltX, 0, cfg.tiltZ]}
       material={material}
     >
-      {/* args: [radiusTop, radiusBottom, height, radialSegments] */}
-      <cylinderGeometry args={[cfg.radius * 0.4, cfg.radius, cfg.height, 6, 1, true]} />
+      {/* args: [radiusTop, radiusBottom, height, radialSegments] —
+          12 segments keep the centre-bright thickness gradient smooth */}
+      <cylinderGeometry args={[cfg.radius * 0.4, cfg.radius, cfg.height, 12, 1, true]} />
     </mesh>
   );
 }
