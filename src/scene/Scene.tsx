@@ -42,7 +42,14 @@ const defaultCam = vessel.defaultCamera;
  * The Canvas itself has no business logic. It only renders what the
  * store tells it to.
  */
-export function Scene() {
+interface SceneProps {
+  /** GPU context dropped — App shows the recovery screen. */
+  onContextLost?: () => void;
+  /** Context came back (after preventDefault on the lost event). */
+  onContextRestored?: () => void;
+}
+
+export function Scene({ onContextLost, onContextRestored }: SceneProps) {
   const clearSelection = useSceneStore((s) => s.clearSelection);
   const resetCamera    = useSceneStore((s) => s.resetCamera);
   const closePanel     = useUIStore((s) => s.closePanel);
@@ -72,6 +79,17 @@ export function Scene() {
       }}
       // Clicking empty space (ocean/sky) deselects the active component
       onPointerMissed={handlePointerMissed}
+      onCreated={({ gl }) => {
+        // preventDefault signals the browser we want the context restored
+        // rather than permanently lost
+        gl.domElement.addEventListener('webglcontextlost', (e) => {
+          e.preventDefault();
+          onContextLost?.();
+        });
+        gl.domElement.addEventListener('webglcontextrestored', () => {
+          onContextRestored?.();
+        });
+      }}
       aria-label="3D interactive model of R/V Pelagic Horizon research vessel"
       style={{ width: '100%', height: '100%' }}
     >
