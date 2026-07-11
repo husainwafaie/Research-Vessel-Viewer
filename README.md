@@ -4,11 +4,6 @@
 
 An interactive 3D explorer for a 90-metre oceanographic research vessel — explore her deck systems from the surface, then dive beneath the hull into a fully procedural underwater world: fish schools, hull caustics, god rays, bioluminescent plankton, and a dune-rippled seafloor 150 metres down.
 
-<!-- Hero: drop a screen recording at docs/hero.gif and it will render here -->
-<!-- ![Diving beneath the hull](docs/hero.gif) -->
-
-**Live demo:** _(deploy link goes here)_
-
 ## Highlights
 
 - **Guided tours** — a narrated surface tour of the vessel's scientific systems, and a "Beneath the Hull" dive tour that descends the full water column with depth-aware narration
