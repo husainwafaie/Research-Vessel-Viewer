@@ -1,9 +1,16 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+
+  test: {
+    // Pure-logic tests only (stores, math, geometry) — no DOM needed
+    environment: 'node',
+    include: ['src/**/*.test.ts'],
+  },
 
   resolve: {
     alias: {
