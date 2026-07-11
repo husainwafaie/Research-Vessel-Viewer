@@ -108,7 +108,20 @@ class UnderwaterAudioEngine {
     this.master.gain.setTargetAtTime(target, this.ctx.currentTime, 0.5);
   }
 
-  /** Sparse synthesized whale call: pitch-glide triangle + feedback delay. */
+  /**
+   * Sparse synthesized whale call.
+   *
+   * A bare pitch glide reads as a siren, not an animal, so the moan is
+   * built from the cues that make a call sound vocal:
+   *   - low fundamental (90–140 Hz) with three slightly inharmonic partials
+   *   - a moan contour: brief upward scoop, then a long falling tail —
+   *     never the symmetric up-down sweep of an alarm
+   *   - slow vibrato (~4–6 Hz) shared by all partials
+   *   - a 500 Hz low-pass so the timbre is muffled by the water column
+   *   - the feedback delay smears it into the distance
+   * Fundamental, duration, and vibrato rate are randomized per call so no
+   * two moans are identical.
+   */
   private scheduleWhaleCall(): void {
     const delayMs = 25_000 + Math.random() * 25_000;
     setTimeout(() => {
@@ -116,38 +129,82 @@ class UnderwaterAudioEngine {
       // Only sing when audible — skip silently at the surface or when muted
       if (ctx && this.master && !this.muted && this.level > 0.05) {
         const t = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(180, t);
-        osc.frequency.linearRampToValueAtTime(330, t + 1.6);
-        osc.frequency.linearRampToValueAtTime(220, t + 3.8);
+        const f0 = 90 + Math.random() * 50;   // fundamental, Hz
+        const dur = 3.5 + Math.random() * 2.5; // seconds
 
+        // Pitch contour sampled into a curve so every partial glides
+        // together: scoop up to f0 over the first ~18%, then fall to
+        // ~0.62·f0 with an accelerating (concave) descent
+        const N = 64;
+        const contour = new Float32Array(N);
+        for (let i = 0; i < N; i++) {
+          const u = i / (N - 1);
+          contour[i] =
+            u < 0.18
+              ? f0 * (0.85 + 0.15 * Math.sin((u / 0.18) * Math.PI * 0.5))
+              : f0 * (1.0 - 0.38 * Math.pow((u - 0.18) / 0.82, 1.4));
+        }
+
+        // Envelope: slow swell, gentle sustain decay, fade to silence
         const env = ctx.createGain();
         env.gain.setValueAtTime(0, t);
-        env.gain.linearRampToValueAtTime(0.35, t + 1.2);
-        env.gain.linearRampToValueAtTime(0, t + 4.5);
+        env.gain.linearRampToValueAtTime(0.3, t + dur * 0.25);
+        env.gain.linearRampToValueAtTime(0.2, t + dur * 0.7);
+        env.gain.linearRampToValueAtTime(0, t + dur);
+
+        // Muffled timbre — the water column eats everything bright
+        const lowpass = ctx.createBiquadFilter();
+        lowpass.type = 'lowpass';
+        lowpass.frequency.value = 500;
+        lowpass.connect(env);
+
+        // Shared vibrato: an audio-rate input on each frequency param sums
+        // with its value curve, warbling all partials in unison
+        const vibrato = ctx.createOscillator();
+        vibrato.frequency.value = 4 + Math.random() * 2;
+        const vibDepth = ctx.createGain();
+        vibDepth.gain.value = f0 * 0.012;
+        vibrato.connect(vibDepth);
+
+        // Three partials; slight inharmonicity keeps it vocal, not synth
+        const partials = [
+          { ratio: 1.0, gain: 1.0 },
+          { ratio: 2.003, gain: 0.4 },
+          { ratio: 3.01, gain: 0.15 },
+        ];
+        const nodes: AudioNode[] = [lowpass, env, vibrato, vibDepth];
+        for (const p of partials) {
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          const curve = new Float32Array(N);
+          for (let i = 0; i < N; i++) curve[i] = contour[i] * p.ratio;
+          osc.frequency.setValueCurveAtTime(curve, t, dur);
+          vibDepth.connect(osc.frequency);
+          const g = ctx.createGain();
+          g.gain.value = p.gain;
+          osc.connect(g).connect(lowpass);
+          osc.start(t);
+          osc.stop(t + dur + 0.1);
+          nodes.push(osc, g);
+        }
+        vibrato.start(t);
+        vibrato.stop(t + dur + 0.1);
 
         // Feedback delay smears the call into the distance
         const delay = ctx.createDelay(1.0);
         delay.delayTime.value = 0.42;
         const feedback = ctx.createGain();
-        feedback.gain.value = 0.35;
+        feedback.gain.value = 0.3;
         delay.connect(feedback).connect(delay);
-
-        osc.connect(env);
         env.connect(delay);
         env.connect(this.master);
         delay.connect(this.master);
+        nodes.push(delay, feedback);
 
-        osc.start(t);
-        osc.stop(t + 5);
         // Let the delay tail ring out, then release the nodes
         setTimeout(() => {
-          osc.disconnect();
-          env.disconnect();
-          delay.disconnect();
-          feedback.disconnect();
-        }, 9000);
+          for (const node of nodes) node.disconnect();
+        }, (dur + 5) * 1000);
       }
       this.scheduleWhaleCall();
     }, delayMs);
